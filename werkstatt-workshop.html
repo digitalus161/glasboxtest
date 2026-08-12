@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Werkstattbuch – Workshop</title>
+</head>
+<body>
+<style>
+:root {
+  --blue-ink: #555555;
+  --blue-navy: #004282;
+  --blue-paper: #FFFFFF;
+  --blue-line: #00A0AA;
+  --blue-line-soft: #BFE1E3;
+  --amber: #00A0AA;
+  --amber-dark: #EA4F07;
+}
+* { box-sizing: border-box; }
+html { width: 100%; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+body { width: 100%; min-width: 320px; margin: 0; overflow-x: hidden; }
+.sheet {
+  font-family: 'Courier New', ui-monospace, monospace;
+  background: var(--blue-paper);
+  color: var(--blue-ink);
+  border: 2px solid var(--blue-navy);
+  position: relative;
+  padding: 0;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.sheet::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid var(--blue-line-soft);
+  pointer-events: none;
+}
+.corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--blue-navy);
+}
+.corner.tl { top: 2px; left: 2px; border-right: none; border-bottom: none; }
+.corner.tr { top: 2px; right: 2px; border-left: none; border-bottom: none; }
+.corner.bl { bottom: 2px; left: 2px; border-right: none; border-top: none; }
+.corner.br { bottom: 2px; right: 2px; border-left: none; border-top: none; }
+.titleblock {
+  border-top: 2px solid var(--blue-navy);
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  grid-template-areas: "projekt a11y datum kw count";
+}
+.tb-projekt { grid-area: projekt; }
+.tb-a11y { grid-area: a11y; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tb-datum { grid-area: datum; }
+.tb-kw { grid-area: kw; }
+.tb-count { grid-area: count; }
+.tb-cell {
+  padding: 6px 12px;
+  border-left: 1px solid var(--blue-line);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+}
+.tb-cell:first-child { border-left: none; }
+.tb-label { color: var(--blue-line); text-transform: uppercase; font-size: 9px; }
+.tb-value { font-weight: bold; font-size: 13px; }
+.tb-value-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 13px;
+  color: var(--blue-ink);
+  padding: 0;
+  outline: none;
+}
+.tb-value-input:focus { border-bottom-color: var(--amber); }
+.tb-value-input::placeholder { color: var(--blue-line-soft); font-weight: normal; }
+.field-row { padding: 14px 20px; border-top: 1px solid var(--blue-line-soft); }
+.field-row:first-of-type { border-top: none; }
+label.field-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--blue-navy);
+  margin-bottom: 5px;
+}
+.field-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  background: var(--amber);
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+}
+input[type=text], select {
+  width: 100%;
+  border: none;
+  border-bottom: 1.5px solid var(--blue-line);
+  background: transparent;
+  font-family: inherit;
+  font-size: 17px;
+  padding: 6px 2px;
+  color: var(--blue-ink);
+  outline: none;
+}
+input[type=text]:focus, select:focus { border-bottom-color: var(--amber); }
+.origin-toggle { display: flex; gap: 10px; margin-top: 4px; }
+.origin-btn {
+  flex: 1;
+  padding: 12px 8px;
+  border: 1.5px solid var(--blue-line);
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--blue-navy);
+  cursor: pointer;
+}
+.origin-btn.active { background: var(--amber-dark); color: #fff; border-color: var(--amber-dark); font-weight: bold; }
+.sig-wrap { border: 1.5px solid var(--blue-line); position: relative; touch-action: none; }
+canvas#sig { display: block; width: 100%; height: 140px; touch-action: none; }
+.sig-line { position: absolute; left: 12px; right: 12px; bottom: 32px; border-top: 1px dashed var(--blue-line); pointer-events: none; }
+.sig-clear { position: absolute; top: 4px; right: 4px; font-size: 10px; background: none; border: 1px solid var(--blue-line); color: var(--blue-navy); padding: 3px 8px; cursor: pointer; }
+.submit-row { padding: 16px 20px 20px; }
+button.submit {
+  width: 100%;
+  padding: 16px;
+  background: var(--amber-dark);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+button.submit:active { background: var(--blue-navy); }
+.stamp {
+  display: none;
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--amber-dark);
+}
+.stamp .mark {
+  display: inline-block;
+  border: 3px solid var(--amber-dark);
+  padding: 10px 24px;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  transform: rotate(-4deg);
+}
+.stamp p { font-size: 12px; color: var(--blue-navy); margin-top: 12px; }
+.footer-row {
+  border-top: 1px solid var(--blue-line-soft);
+  padding: 8px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--blue-line);
+}
+.footer-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; }
+.footer-row button {
+  background: none;
+  border: none;
+  color: var(--blue-navy);
+  text-decoration: underline;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+}
+.footer-row button[aria-expanded="true"] { color: var(--amber-dark); font-weight: bold; }
+.log-panel { display: none; border-top: 2px solid var(--blue-navy); padding: 14px 20px; max-height: 260px; overflow-y: auto; }
+.log-entry { border-bottom: 1px dotted var(--blue-line-soft); padding: 8px 0; font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
+.log-entry > span { min-width: 0; overflow-wrap: anywhere; }
+.log-entry img { height: 24px; }
+.log-actions { padding: 8px 20px 16px; display: flex; gap: 10px; }
+.log-actions button { flex: 1; font-size: 11px; padding: 8px; border: 1px solid var(--blue-line); background: transparent; font-family: inherit; cursor: pointer; }
+.log-actions button:disabled { cursor: wait; opacity: 0.65; }
+.admin-heading { margin: 4px 0 2px; color: var(--amber-dark); font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; }
+.daily-note-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue-navy); margin-bottom: 5px; }
+.daily-note { width: 100%; min-height: 82px; resize: vertical; border: 1px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 13px/1.4 inherit; padding: 8px; outline: none; }
+.daily-note:focus { border-color: var(--amber); }
+.hidden { display: none !important; }
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(22,32,43,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+}
+.modal-box {
+  background: var(--blue-paper); border: 2px solid var(--blue-navy);
+  max-width: 340px; width: 100%; padding: 20px; font-family: inherit;
+}
+.modal-box p { font-size: 14px; color: var(--blue-ink); margin: 0 0 18px; line-height: 1.4; }
+.modal-password-input { width: 100%; margin: -6px 0 18px; border: 1.5px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 16px inherit; padding: 10px; outline: none; }
+.modal-password-input:focus { border-color: var(--amber); }
+.modal-buttons { display: flex; gap: 10px; }
+.modal-buttons button {
+  flex: 1; padding: 12px; font-family: inherit; font-size: 13px; cursor: pointer;
+  border: 1.5px solid var(--blue-navy); background: transparent; color: var(--blue-navy);
+}
+.modal-buttons button.primary { background: var(--amber-dark); color: #fff; border-color: var(--amber-dark); font-weight: bold; }
+@media (max-width: 820px) {
+  .sheet { width: 100%; max-width: none; min-height: 100dvh; border-left: none; border-right: none; }
+  .titleblock {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "projekt a11y"
+      "datum kw"
+      "count count";
+  }
+  .tb-cell:nth-child(3), .tb-cell:nth-child(5) { border-left: none; }
+  .field-row, .submit-row, .log-panel, .log-actions { padding-left: 16px; padding-right: 16px; }
+  .footer-row { align-items: flex-start; flex-direction: column; }
+  .footer-actions { width: 100%; justify-content: space-between; }
+  .footer-row button { min-height: 28px; }
+  .daily-note, .modal-password-input { font-size: 16px; }
+}
+.a11y-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: bold;
+  border: 1.5px solid var(--blue-navy);
+  background: var(--blue-navy);
+  color: #fff;
+  padding: 6px 9px;
+  min-height: 34px;
+  min-width: 34px;
+  cursor: pointer;
+  border-radius: 3px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+#text-size-toggle { background: var(--blue-line); border-color: var(--blue-line); }
+.a11y-btn[aria-pressed="true"] { background: var(--amber-dark); color: #fff; border-color: var(--amber-dark); }
+body.large-text .field-label { font-size: 13px; }
+body.large-text .field-number { width: 22px; height: 22px; flex: 0 0 22px; font-size: 13px; }
+body.large-text input[type=text], body.large-text select, body.large-text .daily-note { font-size: 21px; }
+body.large-text .origin-btn { font-size: 16px; padding: 15px 10px; }
+body.large-text button.submit { font-size: 19px; padding: 20px; }
+body.large-text .sig-clear { font-size: 13px; padding: 6px 10px; }
+body.large-text .tb-label { font-size: 11px; }
+body.large-text .tb-value, body.large-text .tb-value-input { font-size: 16px; }
+body.large-text .stamp .mark { font-size: 24px; }
+body.large-text .stamp p { font-size: 15px; }
+body.large-text .footer-row { font-size: 13px; }
+body.large-text .footer-row button { font-size: 13px; }
+body.large-text .a11y-btn { font-size: 14px; padding: 9px 13px; }
+body.large-text .admin-heading { font-size: 12px; }
+body.large-text .daily-note-label { font-size: 12px; }
+body.large-text .log-actions button { font-size: 14px; padding: 11px; }
+body.large-text .log-entry { font-size: 15px; }
+body.large-text .modal-box p { font-size: 17px; }
+body.large-text .modal-buttons button { font-size: 15px; padding: 14px; }
+body.large-text .modal-password-input { font-size: 18px; }
+</style>
+
+<div class="sheet" id="sheet">
+  <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+
+  <div class="titleblock">
+    <div class="tb-cell tb-projekt">
+      <div class="tb-label" data-i18n="tbWorkshop">Workshop</div>
+      <input type="text" class="tb-value-input" id="tb-workshop-name" data-i18n-placeholder="tbWorkshopPlaceholder" placeholder="Name eingeben" autocomplete="off" />
+    </div>
+    <div class="tb-cell tb-a11y">
+      <button type="button" class="a11y-btn" id="lang-toggle"></button>
+      <button type="button" class="a11y-btn" id="text-size-toggle" aria-pressed="false">A+</button>
+    </div>
+    <div class="tb-cell tb-datum">
+      <div class="tb-label" data-i18n="tbDatum">Datum</div>
+      <div class="tb-value" id="tb-date">—</div>
+    </div>
+    <div class="tb-cell tb-kw">
+      <div class="tb-label" data-i18n="tbKw">KW</div>
+      <div class="tb-value" id="tb-kw">—</div>
+    </div>
+    <div class="tb-cell tb-count">
+      <div class="tb-label" data-i18n="tbCount">Lfd. Nr.</div>
+      <div class="tb-value" id="tb-count">001</div>
+    </div>
+  </div>
+
+  <div id="form-area">
+    <div class="field-row">
+      <label class="field-label"><span class="field-number">1</span><span data-i18n="fieldName">Name</span></label>
+      <input type="text" id="f-name" placeholder="Vor- und Nachname" data-i18n-placeholder="fieldNamePlaceholder" autocomplete="off" />
+    </div>
+
+    <div class="field-row">
+      <label class="field-label"><span class="field-number">2</span><span data-i18n="fieldHerkunft">Herkunft</span></label>
+      <div class="origin-toggle" id="herkunft-toggle">
+        <button type="button" class="origin-btn active" data-origin="extern" data-i18n="originExtern">Extern</button>
+        <button type="button" class="origin-btn" data-origin="fachbereich" data-i18n="originFachbereich">Fachbereich (Uni)</button>
+      </div>
+    </div>
+
+    <div class="field-row" id="fb-row">
+      <label class="field-label"><span class="field-number">3</span><span data-i18n="fieldFachbereich">Welcher Fachbereich?</span></label>
+      <select id="f-fachbereich">
+        <option value="" data-i18n="fieldFachbereichOption">— auswählen —</option>
+        <option value="FB1">FB1</option>
+        <option value="FB2">FB2</option>
+        <option value="FB3">FB3</option>
+        <option value="FB4">FB4</option>
+        <option value="FB5">FB5</option>
+        <option value="FB6">FB6</option>
+        <option value="FB7">FB7</option>
+        <option value="FB8">FB8</option>
+      </select>
+    </div>
+
+    <div class="field-row">
+      <label class="field-label"><span class="field-number">4</span><span data-i18n="fieldSignature">Unterschrift</span></label>
+      <div class="sig-wrap">
+        <canvas id="sig"></canvas>
+        <div class="sig-line"></div>
+        <button type="button" class="sig-clear" id="sig-clear" data-i18n="sigClear">löschen</button>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button class="submit" id="submit-btn" data-i18n="submitBtn">Eintragen</button>
+    </div>
+  </div>
+
+  <div class="stamp" id="stamp">
+    <div class="mark" data-i18n="stampMark">EINGETRAGEN</div>
+    <p data-i18n="stampText">Danke — bereit für den nächsten Besucher.</p>
+  </div>
+
+  <div class="footer-row">
+    <span data-i18n="footerBrand">Werkstattbuch · digital</span>
+    <div class="footer-actions">
+      <button id="toggle-log" type="button" aria-expanded="false" aria-controls="log-panel" data-i18n="toggleLogShow">Einträge anzeigen</button>
+      <button id="admin-toggle" type="button" aria-expanded="false" aria-controls="log-actions" data-i18n="adminOpen">Verwaltung öffnen</button>
+    </div>
+  </div>
+
+  <div class="log-panel" id="log-panel"></div>
+  <div class="log-actions hidden" id="log-actions" style="flex-direction:column;">
+    <div class="admin-heading" data-i18n="adminHeading">Verwaltung</div>
+    <div style="width:100%;">
+      <label class="daily-note-label" for="daily-note" data-i18n="dailyNoteLabel">Tagebuchnotiz für heute</label>
+      <textarea class="daily-note" id="daily-note" placeholder="Besondere Ereignisse, Beobachtungen oder offene Punkte ..." data-i18n-placeholder="dailyNotePlaceholder"></textarea>
+    </div>
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="export-csv" data-i18n="exportCsvBtn">CSV + Tagebuch exportieren</button>
+    </div>
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="manual-clear" style="color:var(--amber-dark); border-color:var(--amber-dark); font-weight:bold;" data-i18n="manualClearBtn">Alle Einträge löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal-box">
+    <p id="modal-text"></p>
+    <div class="modal-buttons" id="modal-buttons"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const LANG_KEY = 'workshop_lang';
+  const TEXT_SIZE_KEY = 'workshop_text_size_large';
+
+  const translations = {
+    de: {
+      tbWorkshop: 'Workshop', tbWorkshopPlaceholder: 'Name eingeben',
+      tbDatum: 'Datum', tbKw: 'KW', tbCount: 'Lfd. Nr.',
+      fieldName: 'Name', fieldNamePlaceholder: 'Vor- und Nachname',
+      fieldHerkunft: 'Herkunft', originExtern: 'Extern', originFachbereich: 'Fachbereich (Uni)',
+      fieldFachbereich: 'Welcher Fachbereich?', fieldFachbereichOption: '— auswählen —',
+      fieldSignature: 'Unterschrift', sigClear: 'löschen', submitBtn: 'Eintragen',
+      stampMark: 'EINGETRAGEN', stampText: 'Danke — bereit für den nächsten Besucher.',
+      footerBrand: 'Werkstattbuch · digital',
+      toggleLogShow: 'Einträge anzeigen', toggleLogHide: 'Einträge einklappen',
+      adminOpen: 'Verwaltung öffnen', adminClose: 'Verwaltung einklappen',
+      adminHeading: 'Verwaltung',
+      dailyNoteLabel: 'Tagebuchnotiz für heute', dailyNotePlaceholder: 'Besondere Ereignisse, Beobachtungen oder offene Punkte ...',
+      exportCsvBtn: 'CSV + Tagebuch exportieren',
+      manualClearBtn: 'Alle Einträge löschen',
+      statusNoEntries: 'Noch keine Einträge.',
+      signatureAlt: 'Unterschrift',
+      herkunftExternDisplay: 'Extern', herkunftFachbereichPrefix: 'Fachbereich: ',
+      modalCancel: 'Abbrechen', modalOk: 'OK', modalConfirmDelete: 'Ja, löschen', modalOpen: 'Öffnen',
+      passwordPromptText: 'Passwort für die Verwaltung eingeben:', passwordAriaLabel: 'Passwort',
+      alertWrongPassword: 'Das Passwort ist nicht korrekt.',
+      alertNoEntriesToDelete: 'Es sind schon keine Einträge gespeichert.',
+      confirmDeleteAll: 'Wirklich ALLE {count} Einträge löschen? Das kann nicht rückgängig gemacht werden.',
+      confirmDeleteAfterExport: 'CSV und Tagebuch wurden heruntergeladen. Alle {count} Einträge jetzt aus dem Workshop-Buch löschen?',
+      langToggleLabel: '🇬🇧 EN', textSizeToggleLabel: 'Größere Schrift', textSizeToggleLabelActive: 'Normale Schrift'
+    },
+    en: {
+      tbWorkshop: 'Workshop', tbWorkshopPlaceholder: 'Enter name',
+      tbDatum: 'Date', tbKw: 'CW', tbCount: 'No.',
+      fieldName: 'Name', fieldNamePlaceholder: 'First and last name',
+      fieldHerkunft: 'Origin', originExtern: 'External', originFachbereich: 'Department (University)',
+      fieldFachbereich: 'Which department?', fieldFachbereichOption: '— select —',
+      fieldSignature: 'Signature', sigClear: 'clear', submitBtn: 'Submit',
+      stampMark: 'SUBMITTED', stampText: 'Thank you — ready for the next visitor.',
+      footerBrand: 'Workshop log · digital',
+      toggleLogShow: 'Show entries', toggleLogHide: 'Hide entries',
+      adminOpen: 'Open admin', adminClose: 'Close admin',
+      adminHeading: 'Administration',
+      dailyNoteLabel: 'Diary note for today', dailyNotePlaceholder: 'Special events, observations or open items ...',
+      exportCsvBtn: 'Export CSV + diary',
+      manualClearBtn: 'Delete all entries',
+      statusNoEntries: 'No entries yet.',
+      signatureAlt: 'Signature',
+      herkunftExternDisplay: 'External', herkunftFachbereichPrefix: 'Department: ',
+      modalCancel: 'Cancel', modalOk: 'OK', modalConfirmDelete: 'Yes, delete', modalOpen: 'Open',
+      passwordPromptText: 'Enter the admin password:', passwordAriaLabel: 'Password',
+      alertWrongPassword: 'The password is incorrect.',
+      alertNoEntriesToDelete: 'There are no entries saved yet.',
+      confirmDeleteAll: 'Really delete ALL {count} entries? This cannot be undone.',
+      confirmDeleteAfterExport: 'CSV and diary have been downloaded. Delete all {count} entries from the workshop log now?',
+      langToggleLabel: '🇩🇪 DE', textSizeToggleLabel: 'Larger text', textSizeToggleLabelActive: 'Normal text'
+    }
+  };
+
+  let currentLang = 'de';
+  try { currentLang = localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'de'; } catch (e) {}
+
+  function t(key, vars) {
+    let text = (translations[currentLang] && translations[currentLang][key]) || translations.de[key] || key;
+    if (vars) {
+      Object.keys(vars).forEach(function (name) { text = text.replace('{' + name + '}', vars[name]); });
+    }
+    return text;
+  }
+
+  const modalOverlay = document.getElementById('modal-overlay');
+  const modalText = document.getElementById('modal-text');
+  const modalButtons = document.getElementById('modal-buttons');
+
+  function clearModalExtras() {
+    modalText.parentElement.querySelectorAll('.modal-password-input, .modal-check').forEach(function (element) {
+      element.remove();
+    });
+  }
+
+  function showAlert(text) {
+    return new Promise(function (resolve) {
+      clearModalExtras();
+      modalText.textContent = text;
+      modalButtons.innerHTML = '';
+      const okBtn = document.createElement('button');
+      okBtn.className = 'primary';
+      okBtn.textContent = t('modalOk');
+      okBtn.addEventListener('click', function () {
+        modalOverlay.classList.add('hidden');
+        resolve();
+      });
+      modalButtons.appendChild(okBtn);
+      modalOverlay.classList.remove('hidden');
+    });
+  }
+
+  function showConfirm(text) {
+    return new Promise(function (resolve) {
+      clearModalExtras();
+      modalText.textContent = text;
+      modalButtons.innerHTML = '';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = t('modalCancel');
+      cancelBtn.addEventListener('click', function () {
+        modalOverlay.classList.add('hidden');
+        resolve(false);
+      });
+      const okBtn = document.createElement('button');
+      okBtn.className = 'primary';
+      okBtn.textContent = t('modalConfirmDelete');
+      okBtn.addEventListener('click', function () {
+        modalOverlay.classList.add('hidden');
+        resolve(true);
+      });
+      modalButtons.appendChild(cancelBtn);
+      modalButtons.appendChild(okBtn);
+      modalOverlay.classList.remove('hidden');
+    });
+  }
+
+  function showPasswordPrompt() {
+    return new Promise(function (resolve) {
+      clearModalExtras();
+      modalText.textContent = t('passwordPromptText');
+      modalButtons.innerHTML = '';
+
+      const passwordInput = document.createElement('input');
+      passwordInput.type = 'password';
+      passwordInput.className = 'modal-password-input';
+      passwordInput.autocomplete = 'current-password';
+      passwordInput.setAttribute('aria-label', t('passwordAriaLabel'));
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = t('modalCancel');
+      cancelBtn.addEventListener('click', function () {
+        modalOverlay.classList.add('hidden');
+        resolve(null);
+      });
+
+      const openBtn = document.createElement('button');
+      openBtn.className = 'primary';
+      openBtn.textContent = t('modalOpen');
+      function submitPassword() {
+        modalOverlay.classList.add('hidden');
+        resolve(passwordInput.value);
+      }
+      openBtn.addEventListener('click', submitPassword);
+      passwordInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') submitPassword();
+      });
+
+      modalText.insertAdjacentElement('afterend', passwordInput);
+      modalButtons.appendChild(cancelBtn);
+      modalButtons.appendChild(openBtn);
+      modalOverlay.classList.remove('hidden');
+      setTimeout(function () { passwordInput.focus(); }, 0);
+    });
+  }
+
+  const canvas = document.getElementById('sig');
+  const ctx = canvas.getContext('2d');
+  let drawing = false, hasSig = false, last = null;
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#16202B';
+  }
+  window.addEventListener('resize', resizeCanvas);
+  setTimeout(resizeCanvas, 50);
+
+  function pos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+  function start(e) { e.preventDefault(); drawing = true; hasSig = true; last = pos(e); }
+  function move(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    last = p;
+  }
+  function end() { drawing = false; }
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end);
+
+  document.getElementById('sig-clear').addEventListener('click', function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSig = false;
+  });
+
+  const origin = { value: 'extern' };
+  document.querySelectorAll('#herkunft-toggle .origin-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#herkunft-toggle .origin-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      origin.value = btn.dataset.origin;
+      document.getElementById('fb-row').style.display = origin.value === 'fachbereich' ? 'block' : 'none';
+    });
+  });
+  document.getElementById('fb-row').style.display = 'none';
+
+  const WORKSHOP_NAME_KEY = 'workshop_current_name';
+  const workshopNameInput = document.getElementById('tb-workshop-name');
+  try { workshopNameInput.value = localStorage.getItem(WORKSHOP_NAME_KEY) || ''; } catch (e) {}
+  workshopNameInput.addEventListener('input', function () {
+    try { localStorage.setItem(WORKSHOP_NAME_KEY, workshopNameInput.value); } catch (e) {}
+  });
+
+  const today = new Date();
+  document.getElementById('tb-date').textContent = today.toLocaleDateString('de-DE');
+
+  function getISOWeek(d) {
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  }
+  const currentKW = getISOWeek(today);
+  document.getElementById('tb-kw').textContent = String(currentKW);
+
+  const STORAGE_KEY = 'workshop_entries';
+
+  async function loadEntries() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  async function saveEntries(entries) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    } catch (e) {
+      console.error('Speichern fehlgeschlagen', e);
+    }
+  }
+
+  async function refreshCount() {
+    const entries = await loadEntries();
+    document.getElementById('tb-count').textContent = String(entries.length + 1).padStart(3, '0');
+  }
+  refreshCount();
+
+  document.getElementById('submit-btn').addEventListener('click', async function () {
+    const name = document.getElementById('f-name').value.trim();
+    const fb = document.getElementById('f-fachbereich').value.trim();
+
+    if (!name) { document.getElementById('f-name').focus(); return; }
+    if (!hasSig) { canvas.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (origin.value === 'fachbereich' && !fb) { document.getElementById('f-fachbereich').focus(); return; }
+
+    const entry = {
+      workshop: workshopNameInput.value.trim(),
+      name: name,
+      herkunft: origin.value === 'extern' ? 'Extern' : ('Fachbereich: ' + fb),
+      datum: today.toLocaleDateString('de-DE'),
+      zeit: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+      kw: currentKW,
+      signature: canvas.toDataURL('image/png')
+    };
+
+    const entries = await loadEntries();
+    entries.push(entry);
+    await saveEntries(entries);
+    if (document.getElementById('toggle-log').getAttribute('aria-expanded') === 'true') {
+      await renderLog();
+    }
+
+    document.getElementById('form-area').style.display = 'none';
+    document.getElementById('stamp').style.display = 'block';
+
+    setTimeout(async function () {
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-fachbereich').value = '';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasSig = false;
+      document.querySelectorAll('#herkunft-toggle .origin-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-origin="extern"]').classList.add('active');
+      origin.value = 'extern';
+      document.getElementById('fb-row').style.display = 'none';
+      document.getElementById('stamp').style.display = 'none';
+      document.getElementById('form-area').style.display = 'block';
+      refreshCount();
+    }, 1800);
+  });
+
+  const logPanel = document.getElementById('log-panel');
+  const logActions = document.getElementById('log-actions');
+  const toggleBtn = document.getElementById('toggle-log');
+  const adminToggle = document.getElementById('admin-toggle');
+  const ADMIN_PASSWORD = 'digitalus-maximus';
+
+  function setLogExpanded(expanded) {
+    logPanel.style.display = expanded ? 'block' : 'none';
+    toggleBtn.setAttribute('aria-expanded', String(expanded));
+    toggleBtn.textContent = expanded ? t('toggleLogHide') : t('toggleLogShow');
+  }
+
+  function setAdminExpanded(expanded) {
+    logActions.classList.toggle('hidden', !expanded);
+    adminToggle.setAttribute('aria-expanded', String(expanded));
+    adminToggle.textContent = expanded ? t('adminClose') : t('adminOpen');
+  }
+
+  function displayHerkunft(herkunft) {
+    if (herkunft === 'Extern') return t('herkunftExternDisplay');
+    if (/^Fachbereich: /.test(herkunft)) return t('herkunftFachbereichPrefix') + herkunft.slice('Fachbereich: '.length);
+    return herkunft;
+  }
+
+  async function renderLog() {
+    const entries = await loadEntries();
+    if (entries.length === 0) {
+      logPanel.innerHTML = '<div style="font-size:12px;color:var(--blue-line);">' + escapeHtml(t('statusNoEntries')) + '</div>';
+      return;
+    }
+    logPanel.innerHTML = entries.slice().reverse().map(function (e, i) {
+      return '<div class="log-entry">' +
+        '<span>' + (entries.length - i) + '. ' + escapeHtml(e.name) + ' — ' + escapeHtml(displayHerkunft(e.herkunft)) +
+        (e.workshop ? ' — ' + escapeHtml(e.workshop) : '') + '<br><span style="color:var(--blue-line)">' + e.datum + ' ' + e.zeit + '</span></span>' +
+        '<img src="' + e.signature + '" alt="' + escapeHtml(t('signatureAlt')) + '" />' +
+        '</div>';
+    }).join('');
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  const DAILY_NOTE_PREFIX = 'workshop_daily_note_';
+  const dailyNote = document.getElementById('daily-note');
+
+  function dailyNoteKey() {
+    return DAILY_NOTE_PREFIX + today.toLocaleDateString('de-DE');
+  }
+  function loadDailyNote() {
+    try { return localStorage.getItem(dailyNoteKey()) || ''; } catch (e) { return ''; }
+  }
+  function saveDailyNote() {
+    try { localStorage.setItem(dailyNoteKey(), dailyNote.value); } catch (e) {}
+  }
+  dailyNote.addEventListener('input', saveDailyNote);
+
+  toggleBtn.addEventListener('click', async function () {
+    const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+    if (isExpanded) {
+      setLogExpanded(false);
+      return;
+    }
+    setLogExpanded(true);
+    await renderLog();
+  });
+
+  adminToggle.addEventListener('click', async function () {
+    const isExpanded = adminToggle.getAttribute('aria-expanded') === 'true';
+    if (isExpanded) {
+      setAdminExpanded(false);
+      return;
+    }
+    const password = await showPasswordPrompt();
+    if (password === null) return;
+    if (password !== ADMIN_PASSWORD) {
+      await showAlert(t('alertWrongPassword'));
+      return;
+    }
+    setAdminExpanded(true);
+    dailyNote.value = loadDailyNote();
+  });
+
+  function toCsv(entries) {
+    const rows = [['Workshop', 'Name', 'Herkunft', 'Datum', 'Zeit', 'KW']];
+    entries.forEach(function (e) {
+      rows.push([e.workshop || '', e.name, e.herkunft, e.datum, e.zeit, e.kw]);
+    });
+    return rows.map(function (r) {
+      return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';');
+    }).join('\n');
+  }
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function downloadFile(content, filename, type) {
+    downloadBlob(new Blob([content], { type: type }), filename);
+  }
+  function downloadCsv(csv, filename) {
+    downloadFile('﻿' + csv, filename, 'text/csv;charset=utf-8;');
+  }
+  function toDiaryMarkdown(entries, dateLabel) {
+    const externCount = entries.filter(function (e) { return e.herkunft === 'Extern'; }).length;
+    const note = dailyNote.value.trim() || '_Keine Tagesnotiz eingetragen._';
+    const workshopTitle = workshopNameInput.value.trim() || '—';
+    const lines = entries.map(function (e, index) {
+      return (index + 1) + '. **' + e.name + '** - ' + e.herkunft + ' (' + e.zeit + ' Uhr)';
+    });
+    return '# Workshop-Tagebuch\n\n' +
+      '**Workshop:** ' + workshopTitle + '  \n' +
+      '**Datum:** ' + dateLabel + '  \n' +
+      '**Kalenderwoche:** ' + currentKW + '  \n' +
+      '**Teilnehmende:** ' + entries.length + ' (extern: ' + externCount + ', Fachbereich: ' + (entries.length - externCount) + ')\n\n' +
+      '## Tagesnotiz\n\n' + note + '\n\n' +
+      '## Eintraege\n\n' + (lines.length ? lines.join('\n') : '_Keine Eintraege fuer diesen Tag._') + '\n';
+  }
+  function weekFilePrefix() {
+    return 'KW' + String(currentKW).padStart(2, '0') + '-';
+  }
+  function downloadDiary(entries, dateLabel) {
+    const filenameDate = dateLabel.replace(/\./g, '-');
+    downloadFile(toDiaryMarkdown(entries, dateLabel), weekFilePrefix() + 'workshop-tagebuch-' + filenameDate + '.md', 'text/markdown;charset=utf-8;');
+  }
+
+  document.getElementById('manual-clear').addEventListener('click', async function () {
+    const entries = await loadEntries();
+    if (entries.length === 0) {
+      await showAlert(t('alertNoEntriesToDelete'));
+      return;
+    }
+    if (await showConfirm(t('confirmDeleteAll', { count: entries.length }))) {
+      await saveEntries([]);
+      await renderLog();
+      await refreshCount();
+    }
+  });
+
+  document.getElementById('export-csv').addEventListener('click', async function () {
+    const entries = await loadEntries();
+    const todayStr = today.toLocaleDateString('de-DE');
+    const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
+
+    downloadCsv(toCsv(entries), 'workshop-teilnehmer-gesamt.csv');
+    downloadDiary(todaysEntries, todayStr);
+
+    if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
+      await saveEntries([]);
+      await renderLog();
+      await refreshCount();
+    }
+  });
+
+  function applyStaticTranslations() {
+    document.documentElement.lang = currentLang;
+    document.title = currentLang === 'en' ? 'Workshop log – Workshop' : 'Werkstattbuch – Workshop';
+    document.querySelectorAll('[data-i18n]').forEach(function (element) {
+      element.textContent = t(element.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function (element) {
+      element.placeholder = t(element.getAttribute('data-i18n-placeholder'));
+    });
+    document.getElementById('tb-date').textContent = today.toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'de-DE');
+  }
+
+  const langToggleBtn = document.getElementById('lang-toggle');
+  const textSizeToggleBtn = document.getElementById('text-size-toggle');
+
+  function refreshAccessibilityUi() {
+    langToggleBtn.textContent = t('langToggleLabel');
+    const largeTextActive = document.body.classList.contains('large-text');
+    textSizeToggleBtn.setAttribute('aria-pressed', String(largeTextActive));
+    textSizeToggleBtn.setAttribute('aria-label', largeTextActive ? t('textSizeToggleLabelActive') : t('textSizeToggleLabel'));
+  }
+
+  function refreshDynamicUi() {
+    applyStaticTranslations();
+    refreshAccessibilityUi();
+    setLogExpanded(toggleBtn.getAttribute('aria-expanded') === 'true');
+    setAdminExpanded(!logActions.classList.contains('hidden'));
+    if (toggleBtn.getAttribute('aria-expanded') === 'true') renderLog();
+  }
+
+  langToggleBtn.addEventListener('click', function () {
+    currentLang = currentLang === 'de' ? 'en' : 'de';
+    try { localStorage.setItem(LANG_KEY, currentLang); } catch (e) {}
+    refreshDynamicUi();
+  });
+
+  try {
+    if (localStorage.getItem(TEXT_SIZE_KEY) === 'true') document.body.classList.add('large-text');
+  } catch (e) {}
+
+  textSizeToggleBtn.addEventListener('click', function () {
+    const active = document.body.classList.toggle('large-text');
+    try { localStorage.setItem(TEXT_SIZE_KEY, String(active)); } catch (e) {}
+    refreshAccessibilityUi();
+  });
+
+  refreshDynamicUi();
+})();
+</script>
+</body>
+</html>
