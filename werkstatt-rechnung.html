@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Werkstatt-Rechnung</title>
+<style>
+:root {
+  --blue-ink: #555555;
+  --blue-navy: #004282;
+  --blue-paper: #FFFFFF;
+  --blue-line: #00A0AA;
+  --blue-line-soft: #BFE1E3;
+  --amber: #00A0AA;
+  --amber-dark: #EA4F07;
+  --ok-green: #2E7D32;
+}
+* { box-sizing: border-box; }
+html { width: 100%; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+body { width: 100%; min-width: 320px; margin: 0; overflow-x: hidden; background: #EFF4F5; }
+.sheet {
+  font-family: 'Courier New', ui-monospace, monospace;
+  background: var(--blue-paper);
+  color: var(--blue-ink);
+  border: 2px solid var(--blue-navy);
+  position: relative;
+  padding: 0;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.sheet::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border: 1px solid var(--blue-line-soft);
+  pointer-events: none;
+}
+.corner { position: absolute; width: 14px; height: 14px; border: 1.5px solid var(--blue-navy); }
+.corner.tl { top: 2px; left: 2px; border-right: none; border-bottom: none; }
+.corner.tr { top: 2px; right: 2px; border-left: none; border-bottom: none; }
+.corner.bl { bottom: 2px; left: 2px; border-right: none; border-top: none; }
+.corner.br { bottom: 2px; right: 2px; border-left: none; border-top: none; }
+.titleblock {
+  border-top: 2px solid var(--blue-navy);
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  grid-template-areas: "projekt datum nr gear";
+}
+.tb-projekt { grid-area: projekt; }
+.tb-datum { grid-area: datum; }
+.tb-nr { grid-area: nr; }
+.tb-gear { grid-area: gear; display: flex; align-items: center; justify-content: center; }
+.tb-cell { padding: 6px 12px; border-left: 1px solid var(--blue-line); font-size: 11px; letter-spacing: 0.03em; }
+.tb-cell:first-child { border-left: none; }
+.tb-label { color: var(--blue-line); text-transform: uppercase; font-size: 9px; }
+.tb-value { font-weight: bold; font-size: 13px; }
+.gear-btn {
+  background: var(--blue-navy); color: #fff; border: none; font-family: inherit;
+  font-size: 15px; padding: 6px 10px; cursor: pointer;
+}
+.tabs { display: flex; border-top: 1px solid var(--blue-line-soft); }
+.tab-btn {
+  flex: 1; padding: 12px 6px; border: none; border-right: 1px solid var(--blue-line-soft);
+  background: transparent; font-family: inherit; font-size: 12px; color: var(--blue-navy);
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.tab-btn:last-child { border-right: none; }
+.tab-btn.active { background: var(--blue-navy); color: #fff; font-weight: bold; }
+.section { padding: 14px 20px; border-top: 1px solid var(--blue-line-soft); }
+.section:first-of-type { border-top: none; }
+.section-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue-navy);
+  margin-bottom: 8px; font-weight: bold;
+}
+.dropzone {
+  border: 1.5px dashed var(--blue-line); padding: 18px; text-align: center; cursor: pointer;
+  font-size: 12px; color: var(--blue-navy);
+}
+.dropzone.filled { border-style: solid; }
+.dropzone input { display: none; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 10px; }
+.field-grid.narrow { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue-line); }
+.field input[type=text], .field input[type=number], .field select {
+  border: none; border-bottom: 1.5px solid var(--blue-line); background: transparent;
+  font-family: inherit; font-size: 14px; padding: 5px 2px; color: var(--blue-ink); outline: none;
+}
+.field input:focus, .field select:focus { border-bottom-color: var(--amber-dark); }
+.calc-box {
+  margin-top: 12px; background: #F7FBFB; border: 1px solid var(--blue-line-soft); padding: 10px 12px; font-size: 12px;
+}
+.calc-row { display: flex; justify-content: space-between; padding: 2px 0; }
+.calc-row.total { border-top: 1px solid var(--blue-line-soft); margin-top: 4px; padding-top: 6px; font-weight: bold; color: var(--blue-navy); }
+.btn { border: 1.5px solid var(--blue-navy); background: transparent; color: var(--blue-navy); font-family: inherit; font-size: 13px; padding: 10px 14px; cursor: pointer; }
+.btn.primary { background: var(--amber-dark); color: #fff; border-color: var(--amber-dark); font-weight: bold; }
+.btn.small { font-size: 11px; padding: 6px 10px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+table.pos-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+table.pos-table th, table.pos-table td { border-bottom: 1px solid var(--blue-line-soft); padding: 6px 4px; text-align: left; vertical-align: top; }
+table.pos-table th { color: var(--blue-line); text-transform: uppercase; font-size: 9px; font-weight: normal; }
+table.pos-table td.num { text-align: right; white-space: nowrap; }
+table.pos-table input.qty { width: 40px; border: 1px solid var(--blue-line-soft); font-family: inherit; font-size: 12px; padding: 2px; }
+.del-btn { background: none; border: none; color: var(--amber-dark); cursor: pointer; font-size: 14px; }
+.summary { margin-top: 10px; }
+.summary .calc-row.total { font-size: 15px; }
+.mwst-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--blue-navy); margin-top: 6px; }
+.hidden { display: none !important; }
+.settings-overlay {
+  position: fixed; inset: 0; background: rgba(22,32,43,0.55); display: flex; align-items: flex-start;
+  justify-content: center; z-index: 1000; padding: 20px; overflow-y: auto;
+}
+.settings-box { background: #fff; border: 2px solid var(--blue-navy); max-width: 640px; width: 100%; padding: 0; margin: 20px auto; }
+.settings-box h2 { font-size: 13px; text-transform: uppercase; color: var(--blue-navy); margin: 0; padding: 14px 20px; border-bottom: 2px solid var(--blue-navy); }
+.settings-body { padding: 14px 20px; }
+.settings-group { margin-bottom: 16px; }
+.settings-group h3 { font-size: 11px; color: var(--amber-dark); text-transform: uppercase; margin: 0 0 8px; }
+.mat-row { display: grid; grid-template-columns: 1fr 90px 90px; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 12px; }
+.mat-row.two { grid-template-columns: 1fr 90px; }
+.mat-row span { color: var(--blue-ink); }
+.status-msg { font-size: 11px; padding: 4px 0; min-height: 14px; }
+.status-msg.ok { color: var(--ok-green); }
+.status-msg.err { color: var(--amber-dark); }
+@media (max-width: 700px) {
+  .sheet { max-width: none; }
+  .field-grid { grid-template-columns: 1fr; }
+  .titleblock { grid-template-columns: 1fr 1fr; grid-template-areas: "projekt gear" "datum nr"; }
+}
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .sheet { border: none; max-width: none; }
+  .sheet::before { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="sheet" id="sheet">
+  <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+
+  <div class="titleblock">
+    <div class="tb-cell tb-projekt">
+      <div class="tb-label">Projekt</div>
+      <div class="tb-value" id="tb-firma">Werkstatt-Rechnung</div>
+    </div>
+    <div class="tb-cell tb-datum">
+      <div class="tb-label">Datum</div>
+      <div class="tb-value" id="tb-date">—</div>
+    </div>
+    <div class="tb-cell tb-nr">
+      <div class="tb-label">Rechnungs-Nr.</div>
+      <div class="tb-value" id="tb-nr">—</div>
+    </div>
+    <div class="tb-cell tb-gear no-print">
+      <button type="button" class="gear-btn" id="settings-open" title="Preise & Einstellungen">⚙</button>
+    </div>
+  </div>
+
+  <div class="tabs no-print">
+    <button type="button" class="tab-btn active" data-type="stick">Sticken</button>
+    <button type="button" class="tab-btn" data-type="print">3D-Druck</button>
+    <button type="button" class="tab-btn" data-type="laser">Laser</button>
+  </div>
+
+  <div class="section no-print">
+    <div class="section-title">Datei einlesen</div>
+    <div class="dropzone" id="dropzone">
+      <span id="dropzone-text">Datei wählen (.dst)</span>
+      <input type="file" id="file-input" accept=".dst" />
+    </div>
+    <div class="status-msg" id="parse-status"></div>
+
+    <div id="fields-stick" class="field-grid"></div>
+    <div id="fields-print" class="field-grid hidden"></div>
+    <div id="fields-laser" class="field-grid hidden"></div>
+
+    <div class="calc-box" id="calc-box"></div>
+
+    <div class="btn-row">
+      <button type="button" class="btn primary" id="add-position">+ Position zur Rechnung hinzufügen</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Rechnung</div>
+    <div class="field-grid narrow">
+      <div class="field">
+        <label>Kunde / Auftrag</label>
+        <input type="text" id="f-kunde" placeholder="Name / Projektbezeichnung" />
+      </div>
+    </div>
+    <table class="pos-table" id="pos-table">
+      <thead>
+        <tr><th>Pos.</th><th>Beschreibung</th><th class="no-print">Anz.</th><th class="num">Einzelpreis</th><th class="num">Summe</th><th class="no-print"></th></tr>
+      </thead>
+      <tbody id="pos-tbody"></tbody>
+    </table>
+
+    <div class="summary">
+      <div class="calc-row"><span>Zwischensumme (netto)</span><span id="sum-netto">0,00 €</span></div>
+      <div class="mwst-toggle no-print">
+        <input type="checkbox" id="f-kleinunternehmer" />
+        <label for="f-kleinunternehmer">Kleinunternehmer nach §19 UStG (keine MwSt. ausweisen)</label>
+      </div>
+      <div class="calc-row" id="row-mwst"><span id="mwst-label">zzgl. 19% MwSt.</span><span id="sum-mwst">0,00 €</span></div>
+      <div class="calc-row total"><span>Gesamtbetrag</span><span id="sum-gesamt">0,00 €</span></div>
+    </div>
+
+    <div class="btn-row no-print">
+      <button type="button" class="btn primary" id="btn-print">Drucken / als PDF speichern</button>
+      <button type="button" class="btn" id="btn-export-txt">Als Text exportieren</button>
+      <button type="button" class="btn" id="btn-new">Neue Rechnung</button>
+    </div>
+  </div>
+</div>
+
+<div class="settings-overlay hidden no-print" id="settings-overlay">
+  <div class="settings-box">
+    <h2>Preise & Einstellungen</h2>
+    <div class="settings-body">
+
+      <div class="settings-group">
+        <h3>Allgemein</h3>
+        <div class="mat-row two"><span>Werkstatt-/Firmenname</span><input type="text" id="s-firma"></div>
+        <div class="mat-row two"><span>MwSt.-Satz (%)</span><input type="number" step="0.1" id="s-mwst"></div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Sticken</h3>
+        <div class="mat-row two"><span>Preis pro 1.000 Stiche (€)</span><input type="number" step="0.01" id="s-stick-tausend"></div>
+        <div class="mat-row two"><span>Preis pro Farbwechsel (€)</span><input type="number" step="0.01" id="s-stick-farbe"></div>
+        <div class="mat-row two"><span>Grundgebühr je Auftrag (€)</span><input type="number" step="0.01" id="s-stick-grund"></div>
+      </div>
+
+      <div class="settings-group">
+        <h3>3D-Druck</h3>
+        <div class="mat-row"><span></span><span>€/g</span><span>Dichte g/cm³</span></div>
+        <div id="print-material-rows"></div>
+        <div class="mat-row two"><span>Maschinenstundensatz (€/h)</span><input type="number" step="0.01" id="s-print-stunde"></div>
+        <div class="mat-row two"><span>Rüstpauschale je Auftrag (€)</span><input type="number" step="0.01" id="s-print-grund"></div>
+      </div>
+
+      <div class="settings-group">
+        <h3>Laser</h3>
+        <div class="mat-row two"><span></span><span>€/m Schnitt</span></div>
+        <div id="laser-material-rows"></div>
+        <div class="mat-row two"><span>Preis pro Minute Laserzeit (€)</span><input type="number" step="0.01" id="s-laser-minute"></div>
+        <div class="mat-row two"><span>Grundgebühr je Auftrag (€)</span><input type="number" step="0.01" id="s-laser-grund"></div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn primary" id="settings-save">Speichern</button>
+        <button type="button" class="btn" id="settings-close">Schließen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Einstellungen ---------- */
+  const SETTINGS_KEY = 'rechnung_settings_v1';
+  const COUNTER_KEY = 'rechnung_counter_v1';
+
+  const DEFAULT_SETTINGS = {
+    general: { firma: 'Offene Werkstatt', mwst: 19 },
+    stick: { proTausend: 5, proFarbwechsel: 1, grund: 2 },
+    print: {
+      materialien: {
+        PLA:   { preisProG: 0.04, dichte: 1.24 },
+        PETG:  { preisProG: 0.05, dichte: 1.27 },
+        ABS:   { preisProG: 0.05, dichte: 1.04 },
+        ASA:   { preisProG: 0.06, dichte: 1.05 },
+        TPU:   { preisProG: 0.08, dichte: 1.21 },
+        Resin: { preisProG: 0.15, dichte: 1.10 },
+        Sonstiges: { preisProG: 0.05, dichte: 1.24 }
+      },
+      stunde: 3,
+      grund: 1
+    },
+    laser: {
+      materialien: {
+        'Sperrholz 3mm': { preisProM: 0.80 },
+        'Pappe':         { preisProM: 0.30 },
+        'Acryl 3mm':     { preisProM: 1.20 },
+        'Filz':          { preisProM: 0.50 },
+        'Sonstiges':     { preisProM: 0.60 }
+      },
+      minute: 0.5,
+      grund: 1.5
+    }
+  };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+      const parsed = JSON.parse(raw);
+      // simple merge so new default fields survive old saved settings
+      return Object.assign({}, DEFAULT_SETTINGS, parsed, {
+        stick: Object.assign({}, DEFAULT_SETTINGS.stick, parsed.stick),
+        print: Object.assign({}, DEFAULT_SETTINGS.print, parsed.print, {
+          materialien: Object.assign({}, DEFAULT_SETTINGS.print.materialien, parsed.print && parsed.print.materialien)
+        }),
+        laser: Object.assign({}, DEFAULT_SETTINGS.laser, parsed.laser, {
+          materialien: Object.assign({}, DEFAULT_SETTINGS.laser.materialien, parsed.laser && parsed.laser.materialien)
+        }),
+        general: Object.assign({}, DEFAULT_SETTINGS.general, parsed.general)
+      });
+    } catch (e) { return JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); }
+  }
+  function saveSettings(s) {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+  let settings = loadSettings();
+
+  function nextInvoiceNumber(peekOnly) {
+    let n = 1;
+    try { n = parseInt(localStorage.getItem(COUNTER_KEY) || '1', 10); } catch (e) {}
+    if (!peekOnly) {
+      try { localStorage.setItem(COUNTER_KEY, String(n + 1)); } catch (e) {}
+    }
+    return 'RE-' + new Date().getFullYear() + '-' + String(n).padStart(3, '0');
+  }
+
+  /* ---------- Helpers ---------- */
+  function fmtEUR(n) {
+    return (Number(n) || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+  function fmtNum(n, digits) {
+    return (Number(n) || 0).toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtDuration(sec) {
+    if (sec == null || isNaN(sec)) return '';
+    sec = Math.round(sec);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return (h ? h + 'h ' : '') + m + 'min';
+  }
+
+  /* ---------- DST Parser (Sticken) ---------- */
+  function parseDST(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    const headerBytes = bytes.slice(0, Math.min(512, bytes.length));
+    let headerText = '';
+    for (let i = 0; i < headerBytes.length; i++) headerText += String.fromCharCode(headerBytes[i]);
+
+    function field(code) {
+      const m = headerText.match(new RegExp(code + ':\\s*([^\\r\\x1a\\*]*)'));
+      return m ? m[1].trim() : '';
+    }
+    const stitches = parseInt(field('ST'), 10) || 0;
+    const colors = parseInt(field('CO'), 10) || 0;
+    const plusX = parseInt(field('\\+X'), 10) || 0;
+    const minusX = parseInt(field('-X'), 10) || 0;
+    const plusY = parseInt(field('\\+Y'), 10) || 0;
+    const minusY = parseInt(field('-Y'), 10) || 0;
+    const name = field('LA');
+
+    if (!stitches) throw new Error('Keine Stichzahl im Header gefunden – ist das eine gültige .dst-Datei?');
+
+    return {
+      name: name || null,
+      stitches: stitches,
+      colors: colors || 1,
+      widthMM: (plusX + minusX) / 10,
+      heightMM: (plusY + minusY) / 10
+    };
+  }
+
+  /* ---------- Gcode Parser (3D-Druck) ---------- */
+  function parseDurationString(s) {
+    let total = 0;
+    const d = s.match(/(\d+)d/); if (d) total += parseInt(d[1], 10) * 86400;
+    const h = s.match(/(\d+)h/); if (h) total += parseInt(h[1], 10) * 3600;
+    const mm = s.match(/(\d+)m(?!in)(?!s)/); if (mm) total += parseInt(mm[1], 10) * 60;
+    const ss = s.match(/(\d+)s/); if (ss) total += parseInt(ss[1], 10);
+    return total || null;
+  }
+  const DENSITY = { PLA: 1.24, PETG: 1.27, ABS: 1.04, ASA: 1.05, TPU: 1.21, NYLON: 1.14, PA: 1.14, PC: 1.20, Resin: 1.10 };
+
+  function parsePrintGcode(text) {
+    const r = { filamentMM: null, filamentG: null, timeSec: null, material: null };
+
+    let m = text.match(/;\s*filament used \[mm\]\s*=\s*([\d.]+)/i);
+    if (m) r.filamentMM = parseFloat(m[1]);
+    m = text.match(/;\s*filament used \[g\]\s*=\s*([\d.]+)/i);
+    if (m) r.filamentG = parseFloat(m[1]);
+    m = text.match(/;\s*estimated printing time \(normal mode\)\s*=\s*([^\r\n]+)/i) ||
+        text.match(/;\s*estimated printing time\s*=\s*([^\r\n]+)/i);
+    if (m) r.timeSec = parseDurationString(m[1].trim());
+    m = text.match(/;\s*filament_type\s*=\s*([^\r\n;]+)/i);
+    if (m) r.material = m[1].trim().split(';')[0].trim();
+
+    if (r.filamentMM == null) {
+      m = text.match(/;Filament used:\s*([\d.]+)\s*m\b/i);
+      if (m) r.filamentMM = parseFloat(m[1]) * 1000;
+    }
+    if (r.timeSec == null) {
+      m = text.match(/;TIME:(\d+)/i);
+      if (m) r.timeSec = parseInt(m[1], 10);
+    }
+    if (r.timeSec == null) {
+      m = text.match(/;Print time:\s*([\d.]+)/i);
+      if (m) r.timeSec = parseInt(m[1], 10);
+    }
+    if (!r.material) {
+      m = text.match(/material_name\s*=\s*([^\r\n;]+)/i) || text.match(/;\s*Material:\s*([^\r\n;]+)/i);
+      if (m) r.material = m[1].trim();
+    }
+
+    if (r.filamentG == null && r.filamentMM != null) {
+      const density = DENSITY[(r.material || 'PLA').toUpperCase()] || 1.24;
+      const radiusMM = 1.75 / 2;
+      const volumeMM3 = r.filamentMM * Math.PI * radiusMM * radiusMM;
+      r.filamentG = (volumeMM3 * density) / 1000;
+    }
+    if (r.filamentMM == null && r.filamentG == null && r.timeSec == null) {
+      throw new Error('Keine Filament-/Zeit-Angaben im Gcode gefunden (Slicer-Kommentare fehlen). Bitte Werte manuell eintragen.');
+    }
+    return r;
+  }
+
+  /* ---------- Laser Parser ---------- */
+  function parseLaserGcode(text) {
+    const lines = text.split(/\r?\n/);
+    let x = 0, y = 0, laserOn = false, feed = 1000;
+    let cutMM = 0, timeSec = 0, sawLaserCmd = false;
+    for (let i = 0; i < lines.length; i++) {
+      const clean = lines[i].replace(/;.*/, '').replace(/\(.*?\)/g, '').trim();
+      if (!clean) continue;
+      if (/\bM0?[34]\b/.test(clean)) { laserOn = true; sawLaserCmd = true; }
+      if (/\bM0?5\b/.test(clean)) { laserOn = false; sawLaserCmd = true; }
+      const fMatch = clean.match(/F([\d.]+)/i);
+      if (fMatch) feed = parseFloat(fMatch[1]) || feed;
+      const sMatch = clean.match(/S([\d.]+)/i);
+      if (sMatch) { sawLaserCmd = true; laserOn = parseFloat(sMatch[1]) > 0; }
+      const gMatch = clean.match(/^G0?([0-3])\b/i);
+      if (gMatch) {
+        const g = parseInt(gMatch[1], 10);
+        const xMatch = clean.match(/X(-?[\d.]+)/i);
+        const yMatch = clean.match(/Y(-?[\d.]+)/i);
+        const nx = xMatch ? parseFloat(xMatch[1]) : x;
+        const ny = yMatch ? parseFloat(yMatch[1]) : y;
+        const dist = Math.hypot(nx - x, ny - y);
+        if (g !== 0) {
+          const cutting = sawLaserCmd ? laserOn : true;
+          if (cutting) { cutMM += dist; timeSec += (dist / feed) * 60; }
+        }
+        x = nx; y = ny;
+      }
+    }
+    if (!cutMM) throw new Error('Keine Schnittbewegungen im Gcode gefunden.');
+    return { cutLengthMM: cutMM, timeSec: timeSec, approx: false };
+  }
+
+  function parseLaserSVG(svgText) {
+    const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+    if (doc.querySelector('parsererror')) throw new Error('SVG konnte nicht gelesen werden.');
+    const svg = doc.querySelector('svg');
+    if (!svg) throw new Error('Kein <svg>-Element gefunden.');
+    document.body.appendChild(svg);
+    svg.style.position = 'absolute';
+    svg.style.left = '-99999px';
+    let lenPx = 0;
+    svg.querySelectorAll('path, line, polyline, polygon, rect, circle, ellipse').forEach(function (el) {
+      try { if (typeof el.getTotalLength === 'function') lenPx += el.getTotalLength(); } catch (e) {}
+    });
+    let scale = 1;
+    const widthAttr = svg.getAttribute('width');
+    const viewBox = svg.getAttribute('viewBox');
+    if (widthAttr && /mm/i.test(widthAttr) && viewBox) {
+      const widthMM = parseFloat(widthAttr);
+      const vbWidth = parseFloat(viewBox.trim().split(/\s+/)[2]);
+      if (widthMM && vbWidth) scale = vbWidth / widthMM;
+    }
+    document.body.removeChild(svg);
+    if (!lenPx) throw new Error('Keine zeichnbaren Pfade im SVG gefunden.');
+    return { cutLengthMM: lenPx / scale, timeSec: null, approx: true };
+  }
+
+  /* ---------- UI State ---------- */
+  let activeType = 'stick';
+  let currentParsed = null; // holds last parsed/edited values for active type
+  let positions = [];       // invoice line items
+  let posCounter = 0;
+
+  const tabs = document.querySelectorAll('.tab-btn');
+  const dropzone = document.getElementById('dropzone');
+  const dropzoneText = document.getElementById('dropzone-text');
+  const fileInput = document.getElementById('file-input');
+  const parseStatus = document.getElementById('parse-status');
+  const calcBox = document.getElementById('calc-box');
+
+  const ACCEPT = { stick: '.dst', print: '.gcode,.gco,.g', laser: '.gcode,.nc,.ngc,.svg' };
+  const LABEL = { stick: 'Datei wählen (.dst)', print: 'Datei wählen (.gcode)', laser: 'Datei wählen (.gcode/.nc/.svg)' };
+
+  tabs.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabs.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      activeType = btn.dataset.type;
+      fileInput.accept = ACCEPT[activeType];
+      dropzoneText.textContent = LABEL[activeType];
+      dropzone.classList.remove('filled');
+      parseStatus.textContent = '';
+      parseStatus.className = 'status-msg';
+      currentParsed = null;
+      renderFields(activeType, null);
+      renderCalc();
+      document.querySelectorAll('#fields-stick, #fields-print, #fields-laser').forEach(function (el) { el.classList.add('hidden'); });
+      document.getElementById('fields-' + activeType).classList.remove('hidden');
+    });
+  });
+
+  dropzone.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () {
+    const file = fileInput.files[0];
+    if (!file) return;
+    dropzoneText.textContent = file.name;
+    dropzone.classList.add('filled');
+    handleFile(file);
+  });
+
+  function handleFile(file) {
+    parseStatus.textContent = 'Lese Datei ...';
+    parseStatus.className = 'status-msg';
+    const lower = file.name.toLowerCase();
+
+    if (activeType === 'stick') {
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const parsed = parseDST(reader.result);
+          currentParsed = { fileName: file.name, values: parsed };
+          parseStatus.textContent = 'Eingelesen: ' + parsed.stitches.toLocaleString('de-DE') + ' Stiche, ' + parsed.colors + ' Farben.';
+          parseStatus.className = 'status-msg ok';
+        } catch (e) {
+          currentParsed = { fileName: file.name, values: { stitches: 0, colors: 1, widthMM: 0, heightMM: 0, name: file.name } };
+          parseStatus.textContent = 'Konnte Datei nicht automatisch lesen (' + e.message + '). Bitte Werte manuell eintragen.';
+          parseStatus.className = 'status-msg err';
+        }
+        renderFields('stick', currentParsed.values);
+        renderCalc();
+      };
+      reader.readAsArrayBuffer(file);
+    } else if (activeType === 'print') {
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          const parsed = parsePrintGcode(reader.result);
+          currentParsed = { fileName: file.name, values: parsed };
+          const bits = [];
+          if (parsed.filamentG != null) bits.push(fmtNum(parsed.filamentG, 1) + ' g');
+          if (parsed.timeSec != null) bits.push(fmtDuration(parsed.timeSec));
+          parseStatus.textContent = 'Eingelesen: ' + (bits.join(', ') || 'Metadaten gefunden') + '.';
+          parseStatus.className = 'status-msg ok';
+        } catch (e) {
+          currentParsed = { fileName: file.name, values: { filamentG: null, timeSec: null, material: 'PLA' } };
+          parseStatus.textContent = e.message;
+          parseStatus.className = 'status-msg err';
+        }
+        renderFields('print', currentParsed.values);
+        renderCalc();
+      };
+      reader.readAsText(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          let parsed;
+          if (lower.endsWith('.svg')) parsed = parseLaserSVG(reader.result);
+          else parsed = parseLaserGcode(reader.result);
+          currentParsed = { fileName: file.name, values: parsed };
+          parseStatus.textContent = 'Eingelesen: ' + fmtNum(parsed.cutLengthMM / 1000, 2) + ' m Schnittlänge' +
+            (parsed.timeSec != null ? ', ' + fmtDuration(parsed.timeSec) : '') +
+            (parsed.approx ? ' (geschätzt aus Geometrie).' : '.');
+          parseStatus.className = 'status-msg ok';
+        } catch (e) {
+          currentParsed = { fileName: file.name, values: { cutLengthMM: 0, timeSec: null } };
+          parseStatus.textContent = e.message + ' Bitte Werte manuell eintragen.';
+          parseStatus.className = 'status-msg err';
+        }
+        renderFields('laser', currentParsed.values);
+        renderCalc();
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  /* ---------- Editable field rendering per type ---------- */
+  function renderFields(type, values) {
+    values = values || {};
+    if (type === 'stick') {
+      const el = document.getElementById('fields-stick');
+      el.innerHTML =
+        field('f-stick-name', 'Bezeichnung', 'text', values.name || (currentParsed ? currentParsed.fileName : '')) +
+        field('f-stick-stitches', 'Stiche', 'number', values.stitches || 0) +
+        field('f-stick-colors', 'Farbwechsel', 'number', values.colors || 1) +
+        field('f-stick-menge', 'Anzahl (Stück)', 'number', 1);
+      wireRecalc(['f-stick-name', 'f-stick-stitches', 'f-stick-colors', 'f-stick-menge']);
+    } else if (type === 'print') {
+      const materials = Object.keys(settings.print.materialien);
+      const el = document.getElementById('fields-print');
+      el.innerHTML =
+        field('f-print-name', 'Bezeichnung', 'text', currentParsed ? currentParsed.fileName : '') +
+        selectField('f-print-material', 'Material', materials, values.material) +
+        field('f-print-gramm', 'Materialgewicht (g)', 'number', values.filamentG != null ? Math.round(values.filamentG * 10) / 10 : 0) +
+        field('f-print-zeit', 'Druckzeit (min)', 'number', values.timeSec != null ? Math.round(values.timeSec / 60) : 0) +
+        field('f-print-menge', 'Anzahl (Stück)', 'number', 1);
+      wireRecalc(['f-print-name', 'f-print-material', 'f-print-gramm', 'f-print-zeit', 'f-print-menge']);
+    } else {
+      const materials = Object.keys(settings.laser.materialien);
+      const el = document.getElementById('fields-laser');
+      el.innerHTML =
+        field('f-laser-name', 'Bezeichnung', 'text', currentParsed ? currentParsed.fileName : '') +
+        selectField('f-laser-material', 'Material', materials, values.material) +
+        field('f-laser-laenge', 'Schnittlänge (m)', 'number', values.cutLengthMM != null ? Math.round((values.cutLengthMM / 1000) * 100) / 100 : 0) +
+        field('f-laser-zeit', 'Laserzeit (min)', 'number', values.timeSec != null ? Math.round(values.timeSec / 60) : 0) +
+        field('f-laser-menge', 'Anzahl (Stück)', 'number', 1);
+      wireRecalc(['f-laser-name', 'f-laser-material', 'f-laser-laenge', 'f-laser-zeit', 'f-laser-menge']);
+    }
+  }
+  function field(id, label, type, value) {
+    return '<div class="field"><label for="' + id + '">' + escapeHtml(label) + '</label>' +
+      '<input type="' + type + '" id="' + id + '" value="' + escapeHtml(value == null ? '' : value) + '"' +
+      (type === 'number' ? ' step="0.1"' : '') + '></div>';
+  }
+  function selectField(id, label, options, selected) {
+    const opts = options.map(function (o) {
+      return '<option value="' + escapeHtml(o) + '"' + (o === selected ? ' selected' : '') + '>' + escapeHtml(o) + '</option>';
+    }).join('');
+    return '<div class="field"><label for="' + id + '">' + escapeHtml(label) + '</label>' +
+      '<select id="' + id + '">' + opts + '</select></div>';
+  }
+  function wireRecalc(ids) {
+    ids.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', renderCalc);
+    });
+  }
+  function num(id) {
+    const el = document.getElementById(id);
+    if (!el) return 0;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? 0 : v;
+  }
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  }
+
+  /* ---------- Preisberechnung ---------- */
+  function computeCurrent() {
+    if (activeType === 'stick') {
+      const stitches = num('f-stick-stitches');
+      const colors = num('f-stick-colors');
+      const menge = Math.max(1, num('f-stick-menge') || 1);
+      const grund = settings.stick.grund;
+      const stichPreis = (stitches / 1000) * settings.stick.proTausend;
+      const farbPreis = colors * settings.stick.proFarbwechsel;
+      const einzelpreis = grund + stichPreis + farbPreis;
+      return {
+        beschreibung: (val('f-stick-name') || 'Stickerei') + ' — ' + stitches.toLocaleString('de-DE') + ' Stiche, ' + colors + ' Farben',
+        menge: menge, einzelpreis: einzelpreis,
+        rows: [
+          ['Grundgebühr', fmtEUR(grund)],
+          ['Stiche (' + stitches.toLocaleString('de-DE') + ' × ' + fmtEUR(settings.stick.proTausend) + '/1000)', fmtEUR(stichPreis)],
+          ['Farbwechsel (' + colors + ' × ' + fmtEUR(settings.stick.proFarbwechsel) + ')', fmtEUR(farbPreis)]
+        ]
+      };
+    } else if (activeType === 'print') {
+      const material = val('f-print-material') || 'Sonstiges';
+      const gramm = num('f-print-gramm');
+      const minuten = num('f-print-zeit');
+      const menge = Math.max(1, num('f-print-menge') || 1);
+      const matSetting = settings.print.materialien[material] || settings.print.materialien.Sonstiges;
+      const grund = settings.print.grund;
+      const matPreis = gramm * matSetting.preisProG;
+      const zeitPreis = (minuten / 60) * settings.print.stunde;
+      const einzelpreis = grund + matPreis + zeitPreis;
+      return {
+        beschreibung: (val('f-print-name') || '3D-Druck') + ' — ' + material + ', ' + fmtNum(gramm, 1) + ' g, ' + fmtDuration(minuten * 60),
+        menge: menge, einzelpreis: einzelpreis,
+        rows: [
+          ['Rüstpauschale', fmtEUR(grund)],
+          ['Material (' + fmtNum(gramm, 1) + ' g × ' + fmtEUR(matSetting.preisProG) + '/g)', fmtEUR(matPreis)],
+          ['Maschinenzeit (' + fmtDuration(minuten * 60) + ' × ' + fmtEUR(settings.print.stunde) + '/h)', fmtEUR(zeitPreis)]
+        ]
+      };
+    } else {
+      const material = val('f-laser-material') || 'Sonstiges';
+      const meter = num('f-laser-laenge');
+      const minuten = num('f-laser-zeit');
+      const menge = Math.max(1, num('f-laser-menge') || 1);
+      const matSetting = settings.laser.materialien[material] || settings.laser.materialien.Sonstiges;
+      const grund = settings.laser.grund;
+      const matPreis = meter * matSetting.preisProM;
+      const zeitPreis = minuten * settings.laser.minute;
+      const einzelpreis = grund + matPreis + zeitPreis;
+      return {
+        beschreibung: (val('f-laser-name') || 'Laserzuschnitt') + ' — ' + material + ', ' + fmtNum(meter, 2) + ' m',
+        menge: menge, einzelpreis: einzelpreis,
+        rows: [
+          ['Grundgebühr', fmtEUR(grund)],
+          ['Schnittlänge (' + fmtNum(meter, 2) + ' m × ' + fmtEUR(matSetting.preisProM) + '/m)', fmtEUR(matPreis)],
+          ['Laserzeit (' + Math.round(minuten) + ' min × ' + fmtEUR(settings.laser.minute) + '/min)', fmtEUR(zeitPreis)]
+        ]
+      };
+    }
+  }
+
+  function renderCalc() {
+    const c = computeCurrent();
+    let html = c.rows.map(function (r) { return '<div class="calc-row"><span>' + escapeHtml(r[0]) + '</span><span>' + r[1] + '</span></div>'; }).join('');
+    html += '<div class="calc-row total"><span>Einzelpreis' + (c.menge > 1 ? ' × ' + c.menge + ' Stück' : '') + '</span><span>' + fmtEUR(c.einzelpreis * c.menge) + '</span></div>';
+    calcBox.innerHTML = html;
+  }
+
+  document.getElementById('add-position').addEventListener('click', function () {
+    const c = computeCurrent();
+    posCounter += 1;
+    positions.push({
+      id: posCounter,
+      beschreibung: c.beschreibung,
+      menge: c.menge,
+      einzelpreis: c.einzelpreis
+    });
+    renderPositions();
+  });
+
+  /* ---------- Rechnungspositionen ---------- */
+  const posTbody = document.getElementById('pos-tbody');
+  function renderPositions() {
+    posTbody.innerHTML = positions.map(function (p, i) {
+      return '<tr data-id="' + p.id + '">' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + escapeHtml(p.beschreibung) + '</td>' +
+        '<td class="no-print"><input class="qty" type="number" min="1" value="' + p.menge + '" data-id="' + p.id + '"></td>' +
+        '<td class="num">' + fmtEUR(p.einzelpreis) + '</td>' +
+        '<td class="num">' + fmtEUR(p.einzelpreis * p.menge) + '</td>' +
+        '<td class="no-print"><button class="del-btn" data-id="' + p.id + '" title="Entfernen">✕</button></td>' +
+        '</tr>';
+    }).join('');
+    posTbody.querySelectorAll('.qty').forEach(function (input) {
+      input.addEventListener('input', function () {
+        const id = parseInt(input.dataset.id, 10);
+        const pos = positions.find(function (p) { return p.id === id; });
+        if (pos) { pos.menge = Math.max(1, parseInt(input.value, 10) || 1); renderPositions(); }
+      });
+    });
+    posTbody.querySelectorAll('.del-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const id = parseInt(btn.dataset.id, 10);
+        positions = positions.filter(function (p) { return p.id !== id; });
+        renderPositions();
+      });
+    });
+    renderSummary();
+  }
+
+  function renderSummary() {
+    const netto = positions.reduce(function (sum, p) { return sum + p.einzelpreis * p.menge; }, 0);
+    const kleinunternehmer = document.getElementById('f-kleinunternehmer').checked;
+    const mwstSatz = settings.general.mwst;
+    const mwst = kleinunternehmer ? 0 : netto * (mwstSatz / 100);
+    document.getElementById('sum-netto').textContent = fmtEUR(netto);
+    document.getElementById('row-mwst').style.display = kleinunternehmer ? 'none' : 'flex';
+    document.getElementById('mwst-label').textContent = 'zzgl. ' + fmtNum(mwstSatz, 1) + '% MwSt.';
+    document.getElementById('sum-mwst').textContent = fmtEUR(mwst);
+    document.getElementById('sum-gesamt').textContent = fmtEUR(netto + mwst);
+  }
+  document.getElementById('f-kleinunternehmer').addEventListener('change', renderSummary);
+
+  /* ---------- Kopfzeile: Datum / Rechnungsnummer ---------- */
+  function initHeader() {
+    document.getElementById('tb-date').textContent = new Date().toLocaleDateString('de-DE');
+    document.getElementById('tb-nr').textContent = nextInvoiceNumber(true);
+    document.getElementById('tb-firma').textContent = settings.general.firma;
+  }
+
+  /* ---------- Export ---------- */
+  document.getElementById('btn-print').addEventListener('click', function () { window.print(); });
+
+  document.getElementById('btn-export-txt').addEventListener('click', function () {
+    const kunde = val('f-kunde') || '—';
+    const nr = document.getElementById('tb-nr').textContent;
+    const datum = document.getElementById('tb-date').textContent;
+    let lines = [];
+    lines.push(settings.general.firma);
+    lines.push('Rechnung ' + nr + ' vom ' + datum);
+    lines.push('Kunde/Auftrag: ' + kunde);
+    lines.push('');
+    positions.forEach(function (p, i) {
+      lines.push((i + 1) + '. ' + p.beschreibung);
+      lines.push('   ' + p.menge + ' Stück x ' + fmtEUR(p.einzelpreis) + ' = ' + fmtEUR(p.einzelpreis * p.menge));
+    });
+    lines.push('');
+    lines.push('Zwischensumme (netto): ' + document.getElementById('sum-netto').textContent);
+    if (document.getElementById('row-mwst').style.display !== 'none') {
+      lines.push(document.getElementById('mwst-label').textContent + ': ' + document.getElementById('sum-mwst').textContent);
+    } else {
+      lines.push('Gemäß §19 UStG wird keine Umsatzsteuer berechnet.');
+    }
+    lines.push('Gesamtbetrag: ' + document.getElementById('sum-gesamt').textContent);
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nr + '.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+
+  document.getElementById('btn-new').addEventListener('click', function () {
+    if (positions.length && !confirm('Aktuelle Rechnung verwerfen und eine neue beginnen?')) return;
+    positions = [];
+    renderPositions();
+    document.getElementById('f-kunde').value = '';
+    document.getElementById('f-kleinunternehmer').checked = false;
+    document.getElementById('tb-nr').textContent = nextInvoiceNumber(false);
+    document.getElementById('tb-date').textContent = new Date().toLocaleDateString('de-DE');
+  });
+
+  /* ---------- Einstellungen-Panel ---------- */
+  const settingsOverlay = document.getElementById('settings-overlay');
+  document.getElementById('settings-open').addEventListener('click', function () {
+    fillSettingsForm();
+    settingsOverlay.classList.remove('hidden');
+  });
+  document.getElementById('settings-close').addEventListener('click', function () {
+    settingsOverlay.classList.add('hidden');
+  });
+
+  function fillSettingsForm() {
+    document.getElementById('s-firma').value = settings.general.firma;
+    document.getElementById('s-mwst').value = settings.general.mwst;
+    document.getElementById('s-stick-tausend').value = settings.stick.proTausend;
+    document.getElementById('s-stick-farbe').value = settings.stick.proFarbwechsel;
+    document.getElementById('s-stick-grund').value = settings.stick.grund;
+    document.getElementById('s-print-stunde').value = settings.print.stunde;
+    document.getElementById('s-print-grund').value = settings.print.grund;
+    document.getElementById('s-laser-minute').value = settings.laser.minute;
+    document.getElementById('s-laser-grund').value = settings.laser.grund;
+
+    const printRows = document.getElementById('print-material-rows');
+    printRows.innerHTML = Object.keys(settings.print.materialien).map(function (mat) {
+      const m = settings.print.materialien[mat];
+      return '<div class="mat-row"><span>' + escapeHtml(mat) + '</span>' +
+        '<input type="number" step="0.01" data-mat="' + escapeHtml(mat) + '" data-key="preisProG" value="' + m.preisProG + '">' +
+        '<input type="number" step="0.01" data-mat="' + escapeHtml(mat) + '" data-key="dichte" value="' + m.dichte + '">' +
+        '</div>';
+    }).join('');
+
+    const laserRows = document.getElementById('laser-material-rows');
+    laserRows.innerHTML = Object.keys(settings.laser.materialien).map(function (mat) {
+      const m = settings.laser.materialien[mat];
+      return '<div class="mat-row two"><span>' + escapeHtml(mat) + '</span>' +
+        '<input type="number" step="0.01" data-lmat="' + escapeHtml(mat) + '" value="' + m.preisProM + '">' +
+        '</div>';
+    }).join('');
+  }
+
+  document.getElementById('settings-save').addEventListener('click', function () {
+    settings.general.firma = document.getElementById('s-firma').value.trim() || 'Werkstatt';
+    settings.general.mwst = parseFloat(document.getElementById('s-mwst').value) || 0;
+    settings.stick.proTausend = parseFloat(document.getElementById('s-stick-tausend').value) || 0;
+    settings.stick.proFarbwechsel = parseFloat(document.getElementById('s-stick-farbe').value) || 0;
+    settings.stick.grund = parseFloat(document.getElementById('s-stick-grund').value) || 0;
+    settings.print.stunde = parseFloat(document.getElementById('s-print-stunde').value) || 0;
+    settings.print.grund = parseFloat(document.getElementById('s-print-grund').value) || 0;
+    settings.laser.minute = parseFloat(document.getElementById('s-laser-minute').value) || 0;
+    settings.laser.grund = parseFloat(document.getElementById('s-laser-grund').value) || 0;
+
+    document.querySelectorAll('#print-material-rows input').forEach(function (input) {
+      const mat = input.dataset.mat, key = input.dataset.key;
+      if (settings.print.materialien[mat]) settings.print.materialien[mat][key] = parseFloat(input.value) || 0;
+    });
+    document.querySelectorAll('#laser-material-rows input').forEach(function (input) {
+      const mat = input.dataset.lmat;
+      if (settings.laser.materialien[mat]) settings.laser.materialien[mat].preisProM = parseFloat(input.value) || 0;
+    });
+
+    saveSettings(settings);
+    document.getElementById('tb-firma').textContent = settings.general.firma;
+    renderFields(activeType, currentParsed ? currentParsed.values : null);
+    renderCalc();
+    renderSummary();
+    settingsOverlay.classList.add('hidden');
+  });
+
+  /* ---------- Init ---------- */
+  initHeader();
+  renderFields('stick', null);
+  renderCalc();
+  renderPositions();
+})();
+</script>
+</body>
+</html>
