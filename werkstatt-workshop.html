@@ -741,6 +741,10 @@ body.large-text .modal-password-input { font-size: 18px; }
   function saveDailyNote() {
     try { localStorage.setItem(dailyNoteKey(), dailyNote.value); } catch (e) {}
   }
+  function clearDailyNote() {
+    dailyNote.value = '';
+    try { localStorage.removeItem(dailyNoteKey()); } catch (e) {}
+  }
   dailyNote.addEventListener('input', saveDailyNote);
 
   toggleBtn.addEventListener('click', async function () {
@@ -879,7 +883,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     ev.setUint32(16, centralOffset, true);
     ev.setUint16(20, 0, true);
 
-    return new Blob(localParts.concat(centralParts, [end]), { type: 'application/zip' });
+    return new Blob(localParts.concat(centralParts, [end]), { type: 'application/octet-stream' });
   }
   function toDiaryMarkdown(entries, dateLabel) {
     const externCount = entries.filter(function (e) { return e.herkunft === 'Extern'; }).length;
@@ -907,6 +911,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     }
     if (await showConfirm(t('confirmDeleteAll', { count: entries.length }))) {
       await saveEntries([]);
+      clearDailyNote();
       await renderLog();
       await refreshCount();
     }
@@ -926,6 +931,7 @@ body.large-text .modal-password-input { font-size: 18px; }
 
     if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
       await saveEntries([]);
+      clearDailyNote();
       await renderLog();
       await refreshCount();
     }
