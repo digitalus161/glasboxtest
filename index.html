@@ -936,6 +936,10 @@ body.large-text .modal-check { font-size: 14px; }
   function saveDailyNote() {
     try { localStorage.setItem(dailyNoteKey(), dailyNote.value); } catch (e) {}
   }
+  function clearDailyNote() {
+    dailyNote.value = '';
+    try { localStorage.removeItem(dailyNoteKey()); } catch (e) {}
+  }
   dailyNote.addEventListener('input', saveDailyNote);
 
   toggleBtn.addEventListener('click', async function () {
@@ -1243,6 +1247,7 @@ body.large-text .modal-check { font-size: 14px; }
     }
     if (await showConfirm(t('confirmDeleteAll', { count: entries.length }))) {
       await saveEntries([]);
+      clearDailyNote();
       await renderLog();
       await refreshCount();
     }
@@ -1258,7 +1263,7 @@ body.large-text .modal-check { font-size: 14px; }
       const zip = new JSZip();
       zip.file('werkstatt-besucher-gesamt.csv', '﻿' + toCsv(entries));
       zip.file(weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', toDiaryMarkdown(todaysEntries, todayStr));
-      const blob = await zip.generateAsync({ type: 'blob' });
+      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/octet-stream' });
       downloadBlob(blob, weekFilePrefix() + 'werkstatt-export-' + filenameDate + '.zip');
     } else {
       downloadCsv(toCsv(entries), 'werkstatt-besucher-gesamt.csv');
@@ -1267,6 +1272,7 @@ body.large-text .modal-check { font-size: 14px; }
 
     if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
       await saveEntries([]);
+      clearDailyNote();
       await renderLog();
       await refreshCount();
     }
