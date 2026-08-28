@@ -365,7 +365,10 @@ body.large-text .modal-password-input { font-size: 18px; }
       <textarea class="daily-note" id="daily-note" placeholder="Besondere Ereignisse, Beobachtungen oder offene Punkte ..." data-i18n-placeholder="dailyNotePlaceholder"></textarea>
     </div>
     <div style="display:flex; gap:10px; width:100%;">
-      <button id="export-csv" data-i18n="exportCsvBtn">CSV + Tagebuch exportieren</button>
+      <button id="export-download" data-i18n="exportDownloadBtn">CSV + Tagebuch lokal herunterladen</button>
+    </div>
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="export-share" data-i18n="exportShareBtn">CSV + Tagebuch an Nextcloud senden</button>
     </div>
     <div style="display:flex; gap:10px; width:100%;">
       <button id="manual-clear" style="color:var(--amber-dark); border-color:var(--amber-dark); font-weight:bold;" data-i18n="manualClearBtn">Alle Einträge löschen</button>
@@ -399,7 +402,9 @@ body.large-text .modal-password-input { font-size: 18px; }
       adminOpen: 'Verwaltung öffnen', adminClose: 'Verwaltung einklappen',
       adminHeading: 'Verwaltung',
       dailyNoteLabel: 'Tagebuchnotiz für heute', dailyNotePlaceholder: 'Besondere Ereignisse, Beobachtungen oder offene Punkte ...',
-      exportCsvBtn: 'CSV + Tagebuch exportieren',
+      exportDownloadBtn: 'CSV + Tagebuch lokal herunterladen',
+      exportShareBtn: 'CSV + Tagebuch an Nextcloud senden',
+      alertShareUnsupported: 'Teilen wird auf diesem Gerät/Browser nicht unterstützt. Bitte "Lokal herunterladen" verwenden.',
       manualClearBtn: 'Alle Einträge löschen',
       statusNoEntries: 'Noch keine Einträge.',
       signatureAlt: 'Unterschrift',
@@ -425,7 +430,9 @@ body.large-text .modal-password-input { font-size: 18px; }
       adminOpen: 'Open admin', adminClose: 'Close admin',
       adminHeading: 'Administration',
       dailyNoteLabel: 'Diary note for today', dailyNotePlaceholder: 'Special events, observations or open items ...',
-      exportCsvBtn: 'Export CSV + diary',
+      exportDownloadBtn: 'Download CSV + diary locally',
+      exportShareBtn: 'Send CSV + diary to Nextcloud',
+      alertShareUnsupported: 'Sharing is not supported on this device/browser. Please use "Download locally" instead.',
       manualClearBtn: 'Delete all entries',
       statusNoEntries: 'No entries yet.',
       signatureAlt: 'Signature',
@@ -923,7 +930,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     }
   });
 
-  document.getElementById('export-csv').addEventListener('click', async function () {
+  document.getElementById('export-download').addEventListener('click', async function () {
     const entries = await loadEntries();
     const todayStr = today.toLocaleDateString('de-DE');
     const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
@@ -934,6 +941,41 @@ body.large-text .modal-password-input { font-size: 18px; }
       { name: weekFilePrefix() + 'workshop-tagebuch-' + filenameDate + '.md', data: toDiaryMarkdown(todaysEntries, todayStr) }
     ]);
     downloadBlob(zipBlob, weekFilePrefix() + 'workshop-export-' + filenameDate + '.zip');
+
+    if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
+      await saveEntries([]);
+      clearDailyNote();
+      await renderLog();
+      await refreshCount();
+    }
+  });
+
+  document.getElementById('export-share').addEventListener('click', async function () {
+    const entries = await loadEntries();
+    const todayStr = today.toLocaleDateString('de-DE');
+    const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
+    const filenameDate = todayStr.replace(/\./g, '-');
+    const filename = weekFilePrefix() + 'workshop-export-' + filenameDate + '.zip';
+
+    if (!navigator.canShare) {
+      await showAlert(t('alertShareUnsupported'));
+      return;
+    }
+    const zipBlob = createZip([
+      { name: weekFilePrefix() + 'workshop-teilnehmer-gesamt.csv', data: '﻿' + toCsv(entries) },
+      { name: weekFilePrefix() + 'workshop-tagebuch-' + filenameDate + '.md', data: toDiaryMarkdown(todaysEntries, todayStr) }
+    ]);
+    const file = new File([zipBlob], filename, { type: 'application/zip' });
+
+    if (!navigator.canShare({ files: [file] })) {
+      await showAlert(t('alertShareUnsupported'));
+      return;
+    }
+    try {
+      await navigator.share({ files: [file], title: filename });
+    } catch (e) {
+      return;
+    }
 
     if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
       await saveEntries([]);

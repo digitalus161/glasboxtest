@@ -364,7 +364,10 @@ body.large-text .modal-password-input { font-size: 18px; }
       <textarea class="daily-note" id="daily-note" placeholder="Besondere Ereignisse, Beobachtungen oder offene Punkte ..." data-i18n-placeholder="dailyNotePlaceholder"></textarea>
     </div>
     <div style="display:flex; gap:10px; width:100%;">
-      <button id="export-csv" data-i18n="exportCsvBtn">CSV + Tagebuch exportieren</button>
+      <button id="export-download" data-i18n="exportDownloadBtn">CSV + Tagebuch lokal herunterladen</button>
+    </div>
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="export-share" data-i18n="exportShareBtn">CSV + Tagebuch an Nextcloud senden</button>
     </div>
     <div style="display:flex; gap:10px; width:100%;">
       <button id="manual-clear" style="color:var(--amber-dark); border-color:var(--amber-dark); font-weight:bold;" data-i18n="manualClearBtn">Alle Einträge löschen</button>
@@ -400,9 +403,11 @@ body.large-text .modal-password-input { font-size: 18px; }
       adminOpen: 'Verwaltung öffnen', adminClose: 'Verwaltung einklappen',
       adminHeading: 'Verwaltung',
       dailyNoteLabel: 'Tagebuchnotiz für heute', dailyNotePlaceholder: 'Besondere Ereignisse, Beobachtungen oder offene Punkte ...',
-      exportCsvBtn: 'CSV + Tagebuch exportieren',
+      exportDownloadBtn: 'CSV + Tagebuch lokal herunterladen',
+      exportShareBtn: 'CSV + Tagebuch an Nextcloud senden',
       manualClearBtn: 'Alle Einträge löschen',
       statusNoEntries: 'Noch keine Einträge.',
+      alertShareUnsupported: 'Teilen wird auf diesem Gerät/Browser nicht unterstützt. Bitte "Lokal herunterladen" verwenden.',
       signatureAlt: 'Unterschrift',
       herkunftExternDisplay: 'Extern', herkunftFachbereichPrefix: 'Fachbereich: ',
       modalCancel: 'Abbrechen', modalOk: 'OK', modalConfirmDelete: 'Ja, löschen',
@@ -428,9 +433,11 @@ body.large-text .modal-password-input { font-size: 18px; }
       adminOpen: 'Open admin', adminClose: 'Close admin',
       adminHeading: 'Administration',
       dailyNoteLabel: 'Diary note for today', dailyNotePlaceholder: 'Special events, observations or open items ...',
-      exportCsvBtn: 'Export CSV + diary',
+      exportDownloadBtn: 'Download CSV + diary locally',
+      exportShareBtn: 'Send CSV + diary to Nextcloud',
       manualClearBtn: 'Delete all entries',
       statusNoEntries: 'No entries yet.',
+      alertShareUnsupported: 'Sharing is not supported on this device/browser. Please use "Download locally" instead.',
       signatureAlt: 'Signature',
       herkunftExternDisplay: 'External', herkunftFachbereichPrefix: 'Department: ',
       modalCancel: 'Cancel', modalOk: 'OK', modalConfirmDelete: 'Yes, delete',
@@ -852,7 +859,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     }
   });
 
-  document.getElementById('export-csv').addEventListener('click', async function () {
+  document.getElementById('export-download').addEventListener('click', async function () {
     const entries = await loadEntries();
     const todayStr = today.toLocaleDateString('de-DE');
     const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
@@ -862,11 +869,46 @@ body.large-text .modal-password-input { font-size: 18px; }
       const zip = new JSZip();
       zip.file(weekFilePrefix() + 'werkstatt-besucher-gesamt.csv', '﻿' + toCsv(entries));
       zip.file(weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', toDiaryMarkdown(todaysEntries, todayStr));
-      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/octet-stream' });
+      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
       downloadBlob(blob, weekFilePrefix() + 'werkstatt-export-' + filenameDate + '.zip');
     } else {
       downloadCsv(toCsv(entries), weekFilePrefix() + 'werkstatt-besucher-gesamt.csv');
       downloadDiary(todaysEntries, todayStr);
+    }
+
+    if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
+      await saveEntries([]);
+      clearDailyNote();
+      await renderLog();
+      await refreshCount();
+    }
+  });
+
+  document.getElementById('export-share').addEventListener('click', async function () {
+    const entries = await loadEntries();
+    const todayStr = today.toLocaleDateString('de-DE');
+    const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
+    const filenameDate = todayStr.replace(/\./g, '-');
+    const filename = weekFilePrefix() + 'werkstatt-export-' + filenameDate + '.zip';
+
+    if (!window.JSZip || !navigator.canShare) {
+      await showAlert(t('alertShareUnsupported'));
+      return;
+    }
+    const zip = new JSZip();
+    zip.file(weekFilePrefix() + 'werkstatt-besucher-gesamt.csv', '﻿' + toCsv(entries));
+    zip.file(weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', toDiaryMarkdown(todaysEntries, todayStr));
+    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
+    const file = new File([blob], filename, { type: 'application/zip' });
+
+    if (!navigator.canShare({ files: [file] })) {
+      await showAlert(t('alertShareUnsupported'));
+      return;
+    }
+    try {
+      await navigator.share({ files: [file], title: filename });
+    } catch (e) {
+      return;
     }
 
     if (entries.length > 0 && await showConfirm(t('confirmDeleteAfterExport', { count: entries.length }))) {
