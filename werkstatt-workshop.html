@@ -326,6 +326,7 @@ body.large-text .modal-password-input { font-size: 18px; }
         <option value="FB6">FB6</option>
         <option value="FB7">FB7</option>
         <option value="FB8">FB8</option>
+        <option value="Sonstiges" data-i18n="fieldFachbereichSonstiges">Sonstiges</option>
       </select>
     </div>
 
@@ -390,7 +391,7 @@ body.large-text .modal-password-input { font-size: 18px; }
       tbDatum: 'Datum', tbKw: 'KW', tbCount: 'Lfd. Nr.',
       fieldName: 'Name', fieldNamePlaceholder: 'Vor- und Nachname',
       fieldHerkunft: 'Herkunft', originExtern: 'Extern', originFachbereich: 'Fachbereich (Uni)',
-      fieldFachbereich: 'Welcher Fachbereich?', fieldFachbereichOption: '— auswählen —',
+      fieldFachbereich: 'Welcher Fachbereich?', fieldFachbereichOption: '— auswählen —', fieldFachbereichSonstiges: 'Sonstiges',
       fieldSignature: 'Unterschrift', sigClear: 'löschen', submitBtn: 'Eintragen',
       stampMark: 'EINGETRAGEN', stampText: 'Danke — bereit für den nächsten Besucher.',
       footerBrand: 'Werkstattbuch · digital',
@@ -416,7 +417,7 @@ body.large-text .modal-password-input { font-size: 18px; }
       tbDatum: 'Date', tbKw: 'CW', tbCount: 'No.',
       fieldName: 'Name', fieldNamePlaceholder: 'First and last name',
       fieldHerkunft: 'Origin', originExtern: 'External', originFachbereich: 'Department (University)',
-      fieldFachbereich: 'Which department?', fieldFachbereichOption: '— select —',
+      fieldFachbereich: 'Which department?', fieldFachbereichOption: '— select —', fieldFachbereichSonstiges: 'Other',
       fieldSignature: 'Signature', sigClear: 'clear', submitBtn: 'Submit',
       stampMark: 'SUBMITTED', stampText: 'Thank you — ready for the next visitor.',
       footerBrand: 'Workshop log · digital',
@@ -689,7 +690,12 @@ body.large-text .modal-password-input { font-size: 18px; }
   const logActions = document.getElementById('log-actions');
   const toggleBtn = document.getElementById('toggle-log');
   const adminToggle = document.getElementById('admin-toggle');
-  const ADMIN_PASSWORD = 'digitalus-maximus';
+  const ADMIN_PASSWORD_HASH = '87885b056253b896cfa179994df409c38dc32742648236a88c2be6c8589aadfe';
+  async function hashPassword(value) {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
 
   function setLogExpanded(expanded) {
     logPanel.style.display = expanded ? 'block' : 'none';
@@ -765,7 +771,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     }
     const password = await showPasswordPrompt();
     if (password === null) return;
-    if (password !== ADMIN_PASSWORD) {
+    if (await hashPassword(password) !== ADMIN_PASSWORD_HASH) {
       await showAlert(t('alertWrongPassword'));
       return;
     }
@@ -924,7 +930,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     const filenameDate = todayStr.replace(/\./g, '-');
 
     const zipBlob = createZip([
-      { name: 'workshop-teilnehmer-gesamt.csv', data: '﻿' + toCsv(entries) },
+      { name: weekFilePrefix() + 'workshop-teilnehmer-gesamt.csv', data: '﻿' + toCsv(entries) },
       { name: weekFilePrefix() + 'workshop-tagebuch-' + filenameDate + '.md', data: toDiaryMarkdown(todaysEntries, todayStr) }
     ]);
     downloadBlob(zipBlob, weekFilePrefix() + 'workshop-export-' + filenameDate + '.zip');

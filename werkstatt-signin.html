@@ -178,8 +178,6 @@ button.submit:active { background: var(--blue-navy); }
 .log-actions { padding: 8px 20px 16px; display: flex; gap: 10px; }
 .log-actions button { flex: 1; font-size: 11px; padding: 8px; border: 1px solid var(--blue-line); background: transparent; font-family: inherit; cursor: pointer; }
 .log-actions button:disabled { cursor: wait; opacity: 0.65; }
-#upload-cloud { background: var(--amber-dark); color: #fff; border-color: var(--amber-dark); font-weight: bold; }
-.upload-status { min-height: 16px; color: var(--blue-navy); font-size: 11px; text-align: center; }
 .admin-heading { margin: 4px 0 2px; color: var(--amber-dark); font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; }
 .daily-note-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue-navy); margin-bottom: 5px; }
 .daily-note { width: 100%; min-height: 82px; resize: vertical; border: 1px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 13px/1.4 inherit; padding: 8px; outline: none; }
@@ -197,9 +195,6 @@ button.submit:active { background: var(--blue-navy); }
 .modal-box p { font-size: 14px; color: var(--blue-ink); margin: 0 0 18px; line-height: 1.4; }
 .modal-password-input { width: 100%; margin: -6px 0 18px; border: 1.5px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 16px inherit; padding: 10px; outline: none; }
 .modal-password-input:focus { border-color: var(--amber); }
-.modal-cloud-input { width: 100%; margin: 0 0 10px; border: 1.5px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 16px inherit; padding: 10px; outline: none; }
-.modal-cloud-input:focus { border-color: var(--amber); }
-.modal-check { display: flex; align-items: center; gap: 7px; margin: 0 0 18px; color: var(--blue-ink); font-size: 12px; }
 .modal-buttons { display: flex; gap: 10px; }
 .modal-buttons button {
   flex: 1; padding: 12px; font-family: inherit; font-size: 13px; cursor: pointer;
@@ -220,7 +215,7 @@ button.submit:active { background: var(--blue-navy); }
   .footer-row { align-items: flex-start; flex-direction: column; }
   .footer-actions { width: 100%; justify-content: space-between; }
   .footer-row button { min-height: 28px; }
-  .daily-note, .modal-cloud-input, .modal-password-input { font-size: 16px; }
+  .daily-note, .modal-password-input { font-size: 16px; }
 }
 .a11y-btn {
   display: inline-flex;
@@ -259,12 +254,10 @@ body.large-text .a11y-btn { font-size: 14px; padding: 9px 13px; }
 body.large-text .admin-heading { font-size: 12px; }
 body.large-text .daily-note-label { font-size: 12px; }
 body.large-text .log-actions button { font-size: 14px; padding: 11px; }
-body.large-text .upload-status { font-size: 13px; }
 body.large-text .log-entry { font-size: 15px; }
 body.large-text .modal-box p { font-size: 17px; }
 body.large-text .modal-buttons button { font-size: 15px; padding: 14px; }
-body.large-text .modal-password-input, body.large-text .modal-cloud-input { font-size: 18px; }
-body.large-text .modal-check { font-size: 14px; }
+body.large-text .modal-password-input { font-size: 18px; }
 </style>
 
 <div class="sheet" id="sheet">
@@ -327,6 +320,7 @@ body.large-text .modal-check { font-size: 14px; }
         <option value="FB6">FB6</option>
         <option value="FB7">FB7</option>
         <option value="FB8">FB8</option>
+        <option value="Sonstiges" data-i18n="fieldFachbereichSonstiges">Sonstiges</option>
       </select>
     </div>
 
@@ -373,20 +367,7 @@ body.large-text .modal-check { font-size: 14px; }
       <button id="export-csv" data-i18n="exportCsvBtn">CSV + Tagebuch exportieren</button>
     </div>
     <div style="display:flex; gap:10px; width:100%;">
-      <button id="upload-cloud" data-i18n="uploadCloudBtn">In BHT-Cloud hochladen</button>
-    </div>
-    <div style="display:flex; gap:10px; width:100%;">
-      <button id="rebuild-workbook" data-i18n="rebuildWorkbookBtn">Nur Excel-Statistik aktualisieren</button>
-    </div>
-    <div class="upload-status" id="upload-status" aria-live="polite"></div>
-    <div style="display:flex; gap:10px; width:100%;">
-      <button id="select-excel-template" type="button" data-i18n="selectExcelTemplateBtn">Excel-Vorlage wählen</button>
-      <input id="excel-template-file" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" />
-    </div>
-    <div class="upload-status" id="excel-template-status" aria-live="polite"></div>
-    <div style="display:flex; gap:10px; width:100%;">
       <button id="manual-clear" style="color:var(--amber-dark); border-color:var(--amber-dark); font-weight:bold;" data-i18n="manualClearBtn">Alle Einträge löschen</button>
-      <button id="clear-cloud-login" data-i18n="clearCloudLoginBtn">Cloud-Zugang löschen</button>
     </div>
   </div>
 </div>
@@ -410,7 +391,7 @@ body.large-text .modal-check { font-size: 14px; }
       fieldName: 'Name', fieldNamePlaceholder: 'Vor- und Nachname',
       fieldHerkunft: 'Herkunft', originExtern: 'Extern', originFachbereich: 'Fachbereich (Uni)',
       fieldFirstVisit: 'Erstbesuch?', firstVisitYes: 'Ja', firstVisitNo: 'Nein', firstVisitBadge: 'Erstbesuch',
-      fieldFachbereich: 'Welcher Fachbereich?', fieldFachbereichOption: '— auswählen —',
+      fieldFachbereich: 'Welcher Fachbereich?', fieldFachbereichOption: '— auswählen —', fieldFachbereichSonstiges: 'Sonstiges',
       fieldNote: 'Grund / Notiz (optional)', fieldNotePlaceholder: 'z.B. 3D-Druck, Beratung, ...',
       fieldSignature: 'Unterschrift', sigClear: 'löschen', submitBtn: 'Eintragen',
       stampMark: 'EINGETRAGEN', stampText: 'Danke — bereit für den nächsten Besucher.',
@@ -420,32 +401,17 @@ body.large-text .modal-check { font-size: 14px; }
       adminHeading: 'Verwaltung',
       dailyNoteLabel: 'Tagebuchnotiz für heute', dailyNotePlaceholder: 'Besondere Ereignisse, Beobachtungen oder offene Punkte ...',
       exportCsvBtn: 'CSV + Tagebuch exportieren',
-      uploadCloudBtn: 'In BHT-Cloud hochladen', uploadCloudBtnBusy: 'Wird hochgeladen ...',
-      rebuildWorkbookBtn: 'Nur Excel-Statistik aktualisieren', rebuildWorkbookBtnBusy: 'Wird aktualisiert ...',
-      selectExcelTemplateBtn: 'Excel-Vorlage wählen',
-      manualClearBtn: 'Alle Einträge löschen', clearCloudLoginBtn: 'Cloud-Zugang löschen',
+      manualClearBtn: 'Alle Einträge löschen',
       statusNoEntries: 'Noch keine Einträge.',
-      excelTemplateSaved: 'Excel-Vorlage gespeichert', excelTemplateMissing: 'Keine Excel-Vorlage gewählt',
-      lastUploadPrefix: 'Letzter Upload erfolgreich: ',
       signatureAlt: 'Unterschrift',
       herkunftExternDisplay: 'Extern', herkunftFachbereichPrefix: 'Fachbereich: ',
       modalCancel: 'Abbrechen', modalOk: 'OK', modalConfirmDelete: 'Ja, löschen',
-      modalOpen: 'Öffnen', modalUpload: 'Hochladen',
+      modalOpen: 'Öffnen',
       passwordPromptText: 'Passwort für die Verwaltung eingeben:', passwordAriaLabel: 'Passwort',
-      cloudLoginPromptText: 'BHT-Cloud-Zugang eingeben:',
-      bhtUsernamePlaceholder: 'BHT-Benutzername', bhtPasswordPlaceholder: 'BHT-Passwort',
-      rememberLabel: 'Zugang auf diesem iPad speichern',
       alertWrongPassword: 'Das Passwort ist nicht korrekt.',
       alertNoEntriesToDelete: 'Es sind schon keine Einträge gespeichert.',
       confirmDeleteAll: 'Wirklich ALLE {count} Einträge löschen? Das kann nicht rückgängig gemacht werden.',
       confirmDeleteAfterExport: 'CSV und Tagebuch wurden heruntergeladen. Alle {count} Einträge jetzt aus dem Werkstattbuch löschen?',
-      alertNoUploadToday: 'Heute gibt es noch keine Einträge zum Hochladen.',
-      alertUploadSuccess: 'CSV, Tagebuch und Jahresstatistik wurden erfolgreich hochgeladen.',
-      alertUploadFail: 'Upload nicht möglich: {message} Bitte Zugang, Ordner und WebDAV-Freigabe prüfen.',
-      alertCloudLoginCleared: 'Der gespeicherte BHT-Cloud-Zugang wurde von diesem iPad gelöscht.',
-      alertExcelTemplateSaveFail: 'Die Excel-Vorlage konnte auf diesem iPad nicht gespeichert werden.',
-      alertRebuildSuccess: 'Die Excel-Jahresstatistik wurde aktualisiert.',
-      alertRebuildFail: 'Aktualisierung nicht möglich: {message} Bitte Zugang, Ordner und WebDAV-Freigabe prüfen.',
       langToggleLabel: '🇬🇧 EN', textSizeToggleLabel: 'Größere Schrift', textSizeToggleLabelActive: 'Normale Schrift'
     },
     en: {
@@ -453,7 +419,7 @@ body.large-text .modal-check { font-size: 14px; }
       fieldName: 'Name', fieldNamePlaceholder: 'First and last name',
       fieldHerkunft: 'Origin', originExtern: 'External', originFachbereich: 'Department (University)',
       fieldFirstVisit: 'First visit?', firstVisitYes: 'Yes', firstVisitNo: 'No', firstVisitBadge: 'First visit',
-      fieldFachbereich: 'Which department?', fieldFachbereichOption: '— select —',
+      fieldFachbereich: 'Which department?', fieldFachbereichOption: '— select —', fieldFachbereichSonstiges: 'Other',
       fieldNote: 'Reason / note (optional)', fieldNotePlaceholder: 'e.g. 3D printing, consultation, ...',
       fieldSignature: 'Signature', sigClear: 'clear', submitBtn: 'Submit',
       stampMark: 'SUBMITTED', stampText: 'Thank you — ready for the next visitor.',
@@ -463,32 +429,17 @@ body.large-text .modal-check { font-size: 14px; }
       adminHeading: 'Administration',
       dailyNoteLabel: 'Diary note for today', dailyNotePlaceholder: 'Special events, observations or open items ...',
       exportCsvBtn: 'Export CSV + diary',
-      uploadCloudBtn: 'Upload to BHT cloud', uploadCloudBtnBusy: 'Uploading ...',
-      rebuildWorkbookBtn: 'Update Excel stats only', rebuildWorkbookBtnBusy: 'Updating ...',
-      selectExcelTemplateBtn: 'Choose Excel template',
-      manualClearBtn: 'Delete all entries', clearCloudLoginBtn: 'Clear cloud login',
+      manualClearBtn: 'Delete all entries',
       statusNoEntries: 'No entries yet.',
-      excelTemplateSaved: 'Excel template saved', excelTemplateMissing: 'No Excel template selected',
-      lastUploadPrefix: 'Last upload successful: ',
       signatureAlt: 'Signature',
       herkunftExternDisplay: 'External', herkunftFachbereichPrefix: 'Department: ',
       modalCancel: 'Cancel', modalOk: 'OK', modalConfirmDelete: 'Yes, delete',
-      modalOpen: 'Open', modalUpload: 'Upload',
+      modalOpen: 'Open',
       passwordPromptText: 'Enter the admin password:', passwordAriaLabel: 'Password',
-      cloudLoginPromptText: 'Enter BHT cloud login:',
-      bhtUsernamePlaceholder: 'BHT username', bhtPasswordPlaceholder: 'BHT password',
-      rememberLabel: 'Save login on this iPad',
       alertWrongPassword: 'The password is incorrect.',
       alertNoEntriesToDelete: 'There are no entries saved yet.',
       confirmDeleteAll: 'Really delete ALL {count} entries? This cannot be undone.',
       confirmDeleteAfterExport: 'CSV and diary have been downloaded. Delete all {count} entries from the workshop log now?',
-      alertNoUploadToday: 'There are no entries to upload today yet.',
-      alertUploadSuccess: 'CSV, diary and annual statistics were uploaded successfully.',
-      alertUploadFail: 'Upload failed: {message} Please check login, folder and WebDAV sharing.',
-      alertCloudLoginCleared: 'The saved BHT cloud login has been deleted from this iPad.',
-      alertExcelTemplateSaveFail: 'The Excel template could not be saved on this iPad.',
-      alertRebuildSuccess: 'The annual Excel statistics have been updated.',
-      alertRebuildFail: 'Update failed: {message} Please check login, folder and WebDAV sharing.',
       langToggleLabel: '🇩🇪 DE', textSizeToggleLabel: 'Larger text', textSizeToggleLabelActive: 'Normal text'
     }
   };
@@ -509,7 +460,7 @@ body.large-text .modal-check { font-size: 14px; }
   const modalButtons = document.getElementById('modal-buttons');
 
   function clearModalExtras() {
-    modalText.parentElement.querySelectorAll('.modal-password-input, .modal-cloud-input, .modal-check').forEach(function (element) {
+    modalText.parentElement.querySelectorAll('.modal-password-input').forEach(function (element) {
       element.remove();
     });
   }
@@ -591,69 +542,6 @@ body.large-text .modal-check { font-size: 14px; }
       modalButtons.appendChild(openBtn);
       modalOverlay.classList.remove('hidden');
       setTimeout(function () { passwordInput.focus(); }, 0);
-    });
-  }
-
-  function showCloudLoginPrompt() {
-    return new Promise(function (resolve) {
-      clearModalExtras();
-      modalText.textContent = t('cloudLoginPromptText');
-      modalButtons.innerHTML = '';
-      const savedCredentials = loadCloudCredentials();
-
-      const usernameInput = document.createElement('input');
-      usernameInput.type = 'text';
-      usernameInput.className = 'modal-cloud-input';
-      usernameInput.placeholder = t('bhtUsernamePlaceholder');
-      usernameInput.autocomplete = 'username';
-      usernameInput.setAttribute('aria-label', t('bhtUsernamePlaceholder'));
-      usernameInput.value = savedCredentials ? savedCredentials.username : '';
-
-      const passwordInput = document.createElement('input');
-      passwordInput.type = 'password';
-      passwordInput.className = 'modal-cloud-input';
-      passwordInput.placeholder = t('bhtPasswordPlaceholder');
-      passwordInput.autocomplete = 'current-password';
-      passwordInput.setAttribute('aria-label', t('bhtPasswordPlaceholder'));
-      passwordInput.value = savedCredentials ? savedCredentials.password : '';
-
-      const rememberLabel = document.createElement('label');
-      rememberLabel.className = 'modal-check';
-      const rememberInput = document.createElement('input');
-      rememberInput.type = 'checkbox';
-      rememberInput.checked = true;
-      rememberLabel.appendChild(rememberInput);
-      rememberLabel.appendChild(document.createTextNode(t('rememberLabel')));
-
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = t('modalCancel');
-      cancelBtn.addEventListener('click', function () {
-        modalOverlay.classList.add('hidden');
-        resolve(null);
-      });
-
-      const uploadBtn = document.createElement('button');
-      uploadBtn.className = 'primary';
-      uploadBtn.textContent = t('modalUpload');
-      function submitLogin() {
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value;
-        if (!username || !password) return;
-        modalOverlay.classList.add('hidden');
-        resolve({ username: username, password: password, remember: rememberInput.checked });
-      }
-      uploadBtn.addEventListener('click', submitLogin);
-      passwordInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') submitLogin();
-      });
-
-      modalText.insertAdjacentElement('afterend', passwordInput);
-      modalText.insertAdjacentElement('afterend', usernameInput);
-      passwordInput.insertAdjacentElement('afterend', rememberLabel);
-      modalButtons.appendChild(cancelBtn);
-      modalButtons.appendChild(uploadBtn);
-      modalOverlay.classList.remove('hidden');
-      setTimeout(function () { usernameInput.focus(); }, 0);
     });
   }
 
@@ -814,7 +702,12 @@ body.large-text .modal-check { font-size: 14px; }
   const logActions = document.getElementById('log-actions');
   const toggleBtn = document.getElementById('toggle-log');
   const adminToggle = document.getElementById('admin-toggle');
-  const ADMIN_PASSWORD = 'digitalus-maximus';
+  const ADMIN_PASSWORD_HASH = '87885b056253b896cfa179994df409c38dc32742648236a88c2be6c8589aadfe';
+  async function hashPassword(value) {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
 
   function setLogExpanded(expanded) {
     logPanel.style.display = expanded ? 'block' : 'none';
@@ -856,76 +749,7 @@ body.large-text .modal-check { font-size: 14px; }
   }
 
   const DAILY_NOTE_PREFIX = 'werkstatt_daily_note_';
-  const CLOUD_CREDENTIALS_KEY = 'werkstatt_bht_cloud_credentials';
-  const UPLOAD_STATUS_KEY = 'werkstatt_bht_upload_status';
-  const EXCEL_TEMPLATE_KEY = 'werkstatt_excel_template';
   const dailyNote = document.getElementById('daily-note');
-  const uploadStatus = document.getElementById('upload-status');
-  const excelTemplateFile = document.getElementById('excel-template-file');
-  const excelTemplateStatus = document.getElementById('excel-template-status');
-
-  function loadCloudCredentials() {
-    try {
-      const raw = localStorage.getItem(CLOUD_CREDENTIALS_KEY);
-      const credentials = raw ? JSON.parse(raw) : null;
-      return credentials && credentials.username && credentials.password ? credentials : null;
-    } catch (e) { return null; }
-  }
-  function saveCloudCredentials(credentials) {
-    try {
-      localStorage.setItem(CLOUD_CREDENTIALS_KEY, JSON.stringify({
-        username: credentials.username,
-        password: credentials.password
-      }));
-    } catch (e) {}
-  }
-  function clearCloudCredentials() {
-    try { localStorage.removeItem(CLOUD_CREDENTIALS_KEY); } catch (e) {}
-  }
-  function renderUploadStatus() {
-    try {
-      const timestamp = localStorage.getItem(UPLOAD_STATUS_KEY);
-      uploadStatus.textContent = timestamp ? t('lastUploadPrefix') + timestamp : '';
-    } catch (e) {}
-  }
-  function saveUploadStatus() {
-    const timestamp = new Date().toLocaleString(currentLang === 'en' ? 'en-GB' : 'de-DE', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-    try { localStorage.setItem(UPLOAD_STATUS_KEY, timestamp); } catch (e) {}
-    renderUploadStatus();
-  }
-  function renderExcelTemplateStatus() {
-    try {
-      excelTemplateStatus.textContent = localStorage.getItem(EXCEL_TEMPLATE_KEY) ? t('excelTemplateSaved') : t('excelTemplateMissing');
-    } catch (e) {}
-  }
-  function getExcelTemplate() {
-    try { return localStorage.getItem(EXCEL_TEMPLATE_KEY); } catch (e) { return null; }
-  }
-  function dataUrlToArrayBuffer(dataUrl) {
-    const binary = atob(dataUrl.split(',')[1]);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-    return bytes.buffer;
-  }
-  document.getElementById('select-excel-template').addEventListener('click', function () {
-    excelTemplateFile.click();
-  });
-  excelTemplateFile.addEventListener('change', function () {
-    const file = excelTemplateFile.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.addEventListener('load', function () {
-      try {
-        localStorage.setItem(EXCEL_TEMPLATE_KEY, reader.result);
-        renderExcelTemplateStatus();
-      } catch (e) {
-        showAlert(t('alertExcelTemplateSaveFail'));
-      }
-    });
-    reader.readAsDataURL(file);
-  });
 
   function dailyNoteKey() {
     return DAILY_NOTE_PREFIX + today.toLocaleDateString('de-DE');
@@ -960,14 +784,12 @@ body.large-text .modal-check { font-size: 14px; }
     }
     const password = await showPasswordPrompt();
     if (password === null) return;
-    if (password !== ADMIN_PASSWORD) {
+    if (await hashPassword(password) !== ADMIN_PASSWORD_HASH) {
       await showAlert(t('alertWrongPassword'));
       return;
     }
     setAdminExpanded(true);
     dailyNote.value = loadDailyNote();
-    renderUploadStatus();
-    renderExcelTemplateStatus();
   });
 
   function toCsv(entries) {
@@ -1016,229 +838,6 @@ body.large-text .modal-check { font-size: 14px; }
     const filenameDate = dateLabel.replace(/\./g, '-');
     downloadFile(toDiaryMarkdown(entries, dateLabel), weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', 'text/markdown;charset=utf-8;');
   }
-  function encodeBasicAuth(username, password) {
-    return btoa(unescape(encodeURIComponent(username + ':' + password)));
-  }
-  function getCloudFolderParts(category) {
-    return ['GLASBOX', 'Liste&Tagebuch', String(today.getFullYear()), category];
-  }
-  function getCloudUrl(username, pathParts) {
-    return 'https://cloud.bht-berlin.de/remote.php/dav/files/' +
-      encodeURIComponent(username) + '/' + pathParts.map(encodeURIComponent).join('/');
-  }
-  function cloudHeaders(credentials) {
-    return { 'Authorization': 'Basic ' + encodeBasicAuth(credentials.username, credentials.password) };
-  }
-  async function ensureBhtCloudFolder(credentials, category) {
-    const folderParts = getCloudFolderParts(category);
-    const currentPath = [];
-    for (const folder of folderParts) {
-      currentPath.push(folder);
-      const response = await fetch(getCloudUrl(credentials.username, currentPath), {
-        method: 'MKCOL',
-        headers: cloudHeaders(credentials)
-      });
-      if (!response.ok && response.status !== 405) {
-        throw new Error('Ordner ' + currentPath.join('/') + ' konnte nicht angelegt werden (Status ' + response.status + ').');
-      }
-    }
-    return folderParts;
-  }
-  async function uploadToBhtCloud(filename, content, contentType, credentials, folderParts) {
-    const url = getCloudUrl(credentials.username, folderParts.concat(filename));
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Authorization': cloudHeaders(credentials).Authorization,
-        'Content-Type': contentType
-      },
-      body: content
-    });
-    if (!response.ok) throw new Error('BHT-Cloud antwortet mit Status ' + response.status + '.');
-  }
-  async function listBhtCloudFiles(credentials, folderParts) {
-    const response = await fetch(getCloudUrl(credentials.username, folderParts), {
-      method: 'PROPFIND',
-      headers: Object.assign(cloudHeaders(credentials), { Depth: '1' })
-    });
-    if (!response.ok) throw new Error('Die Jahreslisten konnten nicht gelesen werden (Status ' + response.status + ').');
-    const xml = new DOMParser().parseFromString(await response.text(), 'application/xml');
-    return Array.from(xml.getElementsByTagNameNS('*', 'href')).map(function (node) {
-      return decodeURIComponent(node.textContent);
-    }).filter(function (href) {
-      return /\.csv$/i.test(href);
-    });
-  }
-  async function loadBhtCloudFile(url, credentials) {
-    const response = await fetch(url, { headers: cloudHeaders(credentials) });
-    if (!response.ok) throw new Error('Eine Tagesliste konnte nicht gelesen werden (Status ' + response.status + ').');
-    return response.text();
-  }
-  function parseCsv(csv) {
-    const rows = [];
-    let row = [], value = '', quoted = false;
-    for (let i = 0; i < csv.length; i += 1) {
-      const character = csv[i];
-      if (quoted && character === '"' && csv[i + 1] === '"') { value += '"'; i += 1; }
-      else if (character === '"') quoted = !quoted;
-      else if (!quoted && character === ';') { row.push(value); value = ''; }
-      else if (!quoted && (character === '\n' || character === '\r')) {
-        if (character === '\r' && csv[i + 1] === '\n') i += 1;
-        row.push(value); rows.push(row); row = []; value = '';
-      } else value += character;
-    }
-    if (value || row.length) { row.push(value); rows.push(row); }
-    const headers = (rows.shift() || []).map(function (header) { return header.replace(/^\ufeff/, ''); });
-    return rows.filter(function (row) { return row.length > 1; }).map(function (row) {
-      const entry = {};
-      headers.forEach(function (header, index) { entry[header] = row[index] || ''; });
-      return entry;
-    });
-  }
-  const CORRECTION_PERSON_COLUMNS = ['FB1', 'FB2', 'FB3', 'FB4', 'FB5', 'FB6', 'FB7', 'FB8', 'Sonstige', 'Externe', 'Unbekannt'];
-  const CORRECTION_VISIT_COLUMNS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'SaSo'];
-  function correctionsCsvTemplate() {
-    const header = ['KW'].concat(CORRECTION_PERSON_COLUMNS, CORRECTION_VISIT_COLUMNS, ['Kommentar']);
-    return header.join(';') + '\n' +
-      ';;;;;;;;;;;;;;;;;;Pro Papierliste eine Zeile: KW eintragen, Zahlen in die passenden Spalten schreiben, leere Felder = 0\n';
-  }
-  function correctionNumber(value) {
-    const number = Number(String(value || '').trim().replace(',', '.'));
-    return Number.isFinite(number) ? number : 0;
-  }
-  async function loadCorrections(credentials, listFolderParts, year) {
-    const filename = 'Korrekturen_' + year + '.csv';
-    const url = getCloudUrl(credentials.username, listFolderParts.concat(filename));
-    const response = await fetch(url, { headers: cloudHeaders(credentials) });
-    if (response.status === 404) {
-      await uploadToBhtCloud(filename, '\ufeff' + correctionsCsvTemplate(), 'text/csv;charset=utf-8;', credentials, listFolderParts);
-      return [];
-    }
-    if (!response.ok) throw new Error('Die Korrekturdatei konnte nicht gelesen werden (Status ' + response.status + ').');
-    return parseCsv(await response.text());
-  }
-  function germanDateToDate(value) {
-    const parts = value.split('.');
-    return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-  }
-  function excelDateSerial(date) {
-    return Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(1899, 11, 30)) / 86400000);
-  }
-  function mondaySerial(date) {
-    const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const offset = monday.getDay() === 0 ? -6 : 1 - monday.getDay();
-    monday.setDate(monday.getDate() + offset);
-    return excelDateSerial(monday);
-  }
-  function columnIndex(reference) {
-    const letters = reference.replace(/[0-9]/g, '');
-    return letters.split('').reduce(function (value, letter) { return value * 26 + letter.charCodeAt(0) - 64; }, 0);
-  }
-  function getSheetCell(row, column, document) {
-    const cells = Array.from(row.getElementsByTagNameNS('*', 'c'));
-    const existing = cells.find(function (cell) { return cell.getAttribute('r').replace(/[0-9]/g, '') === column; });
-    if (existing) return existing;
-    const cell = document.createElementNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'c');
-    cell.setAttribute('r', column + row.getAttribute('r'));
-    const targetIndex = columnIndex(column + '1');
-    const nextCell = cells.find(function (candidate) { return columnIndex(candidate.getAttribute('r')) > targetIndex; });
-    if (nextCell) row.insertBefore(cell, nextCell); else row.appendChild(cell);
-    return cell;
-  }
-  function getSheetCellValue(row, column, document) {
-    const value = getSheetCell(row, column, document).getElementsByTagNameNS('*', 'v')[0];
-    return value ? Number(value.textContent || 0) : 0;
-  }
-  function setSheetCellValue(row, column, value, document) {
-    const cell = getSheetCell(row, column, document);
-    cell.removeAttribute('t');
-    let valueNode = cell.getElementsByTagNameNS('*', 'v')[0];
-    if (!valueNode) {
-      valueNode = document.createElementNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'v');
-      cell.appendChild(valueNode);
-    }
-    valueNode.textContent = String(value);
-  }
-  function setSheetCellText(row, column, text, document) {
-    const cell = getSheetCell(row, column, document);
-    cell.setAttribute('t', 'inlineStr');
-    Array.from(cell.getElementsByTagNameNS('*', 'f')).forEach(function (node) { node.remove(); });
-    Array.from(cell.getElementsByTagNameNS('*', 'v')).forEach(function (node) { node.remove(); });
-    let inlineString = cell.getElementsByTagNameNS('*', 'is')[0];
-    if (!inlineString) {
-      inlineString = document.createElementNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'is');
-      cell.appendChild(inlineString);
-    }
-    let textNode = inlineString.getElementsByTagNameNS('*', 't')[0];
-    if (!textNode) {
-      textNode = document.createElementNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 't');
-      inlineString.appendChild(textNode);
-    }
-    textNode.textContent = text;
-  }
-  async function buildAnnualWorkbook(entries, corrections) {
-    const template = getExcelTemplate();
-    if (!template) throw new Error('Bitte zuerst die Excel-Vorlage auswählen.');
-    if (!window.JSZip) throw new Error('Die Excel-Bibliothek konnte nicht geladen werden.');
-    const zip = await JSZip.loadAsync(dataUrlToArrayBuffer(template));
-    const sheetFile = zip.file('xl/worksheets/sheet5.xml');
-    if (!sheetFile) throw new Error('Das Blatt „Offene Werkstatt 2026“ wurde in der Vorlage nicht gefunden.');
-    const sheet = new DOMParser().parseFromString(await sheetFile.async('text'), 'application/xml');
-    const rows = Array.from(sheet.getElementsByTagNameNS('*', 'row')).filter(function (row) { return Number(row.getAttribute('r')) >= 3; });
-    const weeklyRows = new Map();
-    const weeksByNumber = new Map();
-    rows.forEach(function (row) {
-      const weekStart = getSheetCellValue(row, 'B', sheet);
-      if (!weekStart) return;
-      const week = { row: row, people: Array(11).fill(0), visits: Array(6).fill(0), comments: [] };
-      weeklyRows.set(weekStart, week);
-      const monday = new Date(Date.UTC(1899, 11, 30) + weekStart * 86400000);
-      weeksByNumber.set(String(getISOWeek(monday)), week);
-    });
-    entries.forEach(function (entry) {
-      const date = germanDateToDate(entry.Datum);
-      const week = weeklyRows.get(mondaySerial(date));
-      if (Number.isNaN(date.getTime())) return;
-      if (!week) throw new Error('Die Excel-Vorlage enthält keine Wochenzeile für ' + entry.Datum + '.');
-      const fbMatch = /^Fachbereich: FB([1-8])$/.exec(entry.Herkunft);
-      const personIndex = fbMatch ? Number(fbMatch[1]) - 1 : entry.Herkunft === 'Extern' ? 9 : 10;
-      week.people[personIndex] += 1;
-      const weekdayIndex = date.getDay() === 0 ? 5 : date.getDay() - 1;
-      week.visits[weekdayIndex] += 1;
-    });
-    corrections.forEach(function (correction) {
-      const weekNumber = String(correction.KW || '').split('/')[0].trim();
-      const week = weeksByNumber.get(weekNumber);
-      if (!week) return;
-      const comment = String(correction.Kommentar || '').trim();
-      if (comment) week.comments.push(comment);
-      CORRECTION_PERSON_COLUMNS.forEach(function (column, index) { week.people[index] += correctionNumber(correction[column]); });
-      CORRECTION_VISIT_COLUMNS.forEach(function (column, index) { week.visits[index] += correctionNumber(correction[column]); });
-    });
-    weeklyRows.forEach(function (week) {
-      const personColumns = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
-      const visitColumns = ['O', 'P', 'Q', 'R', 'S', 'T'];
-      personColumns.forEach(function (column, index) { setSheetCellValue(week.row, column, week.people[index], sheet); });
-      visitColumns.forEach(function (column, index) { setSheetCellValue(week.row, column, week.visits[index], sheet); });
-      setSheetCellValue(week.row, 'N', week.people.reduce(function (sum, value) { return sum + value; }, 0), sheet);
-      setSheetCellValue(week.row, 'U', week.visits.reduce(function (sum, value) { return sum + value; }, 0), sheet);
-      if (week.comments.length) setSheetCellText(week.row, 'V', week.comments.join(' | '), sheet);
-    });
-    zip.file('xl/worksheets/sheet5.xml', new XMLSerializer().serializeToString(sheet));
-    return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
-  }
-  async function updateAnnualWorkbook(credentials, listFolderParts) {
-    const files = await listBhtCloudFiles(credentials, listFolderParts);
-    const year = String(today.getFullYear());
-    const csvFiles = files.filter(function (file) {
-      return file.indexOf('/' + year + '/Listen/') !== -1 && /KW\d+-werkstatt-tagesabschluss-.*\.csv$/i.test(file);
-    });
-    const entries = (await Promise.all(csvFiles.map(function (file) { return loadBhtCloudFile('https://cloud.bht-berlin.de' + file, credentials); }))).flatMap(parseCsv);
-    const corrections = await loadCorrections(credentials, listFolderParts, year);
-    const workbook = await buildAnnualWorkbook(entries, corrections);
-    await uploadToBhtCloud('Statistik_GLASBOX_Offener_Mittwoch_' + year + '.xlsx', workbook, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', credentials, listFolderParts);
-  }
-
   document.getElementById('manual-clear').addEventListener('click', async function () {
     const entries = await loadEntries();
     if (entries.length === 0) {
@@ -1261,12 +860,12 @@ body.large-text .modal-check { font-size: 14px; }
 
     if (window.JSZip) {
       const zip = new JSZip();
-      zip.file('werkstatt-besucher-gesamt.csv', '﻿' + toCsv(entries));
+      zip.file(weekFilePrefix() + 'werkstatt-besucher-gesamt.csv', '﻿' + toCsv(entries));
       zip.file(weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', toDiaryMarkdown(todaysEntries, todayStr));
       const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/octet-stream' });
       downloadBlob(blob, weekFilePrefix() + 'werkstatt-export-' + filenameDate + '.zip');
     } else {
-      downloadCsv(toCsv(entries), 'werkstatt-besucher-gesamt.csv');
+      downloadCsv(toCsv(entries), weekFilePrefix() + 'werkstatt-besucher-gesamt.csv');
       downloadDiary(todaysEntries, todayStr);
     }
 
@@ -1276,70 +875,6 @@ body.large-text .modal-check { font-size: 14px; }
       await renderLog();
       await refreshCount();
     }
-  });
-
-  document.getElementById('upload-cloud').addEventListener('click', async function () {
-    const entries = await loadEntries();
-    const todayStr = today.toLocaleDateString('de-DE');
-    const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
-    if (todaysEntries.length === 0) {
-      await showAlert(t('alertNoUploadToday'));
-      return;
-    }
-
-    const credentials = await showCloudLoginPrompt();
-    if (!credentials) return;
-    if (credentials.remember) saveCloudCredentials(credentials);
-
-    const uploadButton = document.getElementById('upload-cloud');
-    uploadButton.disabled = true;
-    uploadButton.textContent = t('uploadCloudBtnBusy');
-    const filenameDate = todayStr.replace(/\./g, '-');
-    try {
-      const listFolderParts = await ensureBhtCloudFolder(credentials, 'Listen');
-      const diaryFolderParts = await ensureBhtCloudFolder(credentials, 'Tagebucheintraege');
-      await Promise.all([
-        uploadToBhtCloud(weekFilePrefix() + 'werkstatt-tagesabschluss-' + filenameDate + '.csv', '\ufeff' + toCsv(todaysEntries), 'text/csv;charset=utf-8;', credentials, listFolderParts),
-        uploadToBhtCloud(weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', toDiaryMarkdown(todaysEntries, todayStr), 'text/markdown;charset=utf-8;', credentials, diaryFolderParts)
-      ]);
-      await updateAnnualWorkbook(credentials, listFolderParts);
-      saveUploadStatus();
-      await showAlert(t('alertUploadSuccess'));
-    } catch (error) {
-      await showAlert(t('alertUploadFail', { message: error.message }));
-    } finally {
-      uploadButton.disabled = false;
-      uploadButton.textContent = t('uploadCloudBtn');
-    }
-  });
-
-  document.getElementById('rebuild-workbook').addEventListener('click', async function () {
-    let credentials = loadCloudCredentials();
-    if (!credentials) {
-      credentials = await showCloudLoginPrompt();
-      if (!credentials) return;
-      if (credentials.remember) saveCloudCredentials(credentials);
-    }
-
-    const rebuildButton = document.getElementById('rebuild-workbook');
-    rebuildButton.disabled = true;
-    rebuildButton.textContent = t('rebuildWorkbookBtnBusy');
-    try {
-      const listFolderParts = await ensureBhtCloudFolder(credentials, 'Listen');
-      await updateAnnualWorkbook(credentials, listFolderParts);
-      saveUploadStatus();
-      await showAlert(t('alertRebuildSuccess'));
-    } catch (error) {
-      await showAlert(t('alertRebuildFail', { message: error.message }));
-    } finally {
-      rebuildButton.disabled = false;
-      rebuildButton.textContent = t('rebuildWorkbookBtn');
-    }
-  });
-
-  document.getElementById('clear-cloud-login').addEventListener('click', async function () {
-    clearCloudCredentials();
-    await showAlert(t('alertCloudLoginCleared'));
   });
 
   function applyStaticTranslations() {
@@ -1370,16 +905,6 @@ body.large-text .modal-check { font-size: 14px; }
     setLogExpanded(toggleBtn.getAttribute('aria-expanded') === 'true');
     setAdminExpanded(!logActions.classList.contains('hidden'));
     if (toggleBtn.getAttribute('aria-expanded') === 'true') renderLog();
-    if (!logActions.classList.contains('hidden')) {
-      renderUploadStatus();
-      renderExcelTemplateStatus();
-    }
-    if (!document.getElementById('upload-cloud').disabled) {
-      document.getElementById('upload-cloud').textContent = t('uploadCloudBtn');
-    }
-    if (!document.getElementById('rebuild-workbook').disabled) {
-      document.getElementById('rebuild-workbook').textContent = t('rebuildWorkbookBtn');
-    }
   }
 
   langToggleBtn.addEventListener('click', function () {
