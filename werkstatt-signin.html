@@ -889,24 +889,19 @@ body.large-text .modal-password-input { font-size: 18px; }
     const todayStr = today.toLocaleDateString('de-DE');
     const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
     const filenameDate = todayStr.replace(/\./g, '-');
-    const filename = weekFilePrefix() + 'werkstatt-export-' + filenameDate + '.zip';
-
-    if (!window.JSZip || !navigator.canShare) {
+    if (!navigator.canShare) {
       await showAlert(t('alertShareUnsupported'));
       return;
     }
-    const zip = new JSZip();
-    zip.file(weekFilePrefix() + 'werkstatt-besucher-gesamt.csv', '﻿' + toCsv(entries));
-    zip.file(weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', toDiaryMarkdown(todaysEntries, todayStr));
-    const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
-    const file = new File([blob], filename, { type: 'application/zip' });
+    const csvFile = new File(['﻿' + toCsv(entries)], weekFilePrefix() + 'werkstatt-besucher-gesamt.csv', { type: 'text/csv;charset=utf-8;' });
+    const diaryFile = new File([toDiaryMarkdown(todaysEntries, todayStr)], weekFilePrefix() + 'werkstatt-tagebuch-' + filenameDate + '.md', { type: 'text/markdown;charset=utf-8;' });
 
-    if (!navigator.canShare({ files: [file] })) {
+    if (!navigator.canShare({ files: [csvFile, diaryFile] })) {
       await showAlert(t('alertShareUnsupported'));
       return;
     }
     try {
-      await navigator.share({ files: [file], title: filename });
+      await navigator.share({ files: [csvFile, diaryFile] });
     } catch (e) {
       return;
     }

@@ -955,24 +955,19 @@ body.large-text .modal-password-input { font-size: 18px; }
     const todayStr = today.toLocaleDateString('de-DE');
     const todaysEntries = entries.filter(function (e) { return e.datum === todayStr; });
     const filenameDate = todayStr.replace(/\./g, '-');
-    const filename = weekFilePrefix() + 'workshop-export-' + filenameDate + '.zip';
-
     if (!navigator.canShare) {
       await showAlert(t('alertShareUnsupported'));
       return;
     }
-    const zipBlob = createZip([
-      { name: weekFilePrefix() + 'workshop-teilnehmer-gesamt.csv', data: '﻿' + toCsv(entries) },
-      { name: weekFilePrefix() + 'workshop-tagebuch-' + filenameDate + '.md', data: toDiaryMarkdown(todaysEntries, todayStr) }
-    ]);
-    const file = new File([zipBlob], filename, { type: 'application/zip' });
+    const csvFile = new File(['﻿' + toCsv(entries)], weekFilePrefix() + 'workshop-teilnehmer-gesamt.csv', { type: 'text/csv;charset=utf-8;' });
+    const diaryFile = new File([toDiaryMarkdown(todaysEntries, todayStr)], weekFilePrefix() + 'workshop-tagebuch-' + filenameDate + '.md', { type: 'text/markdown;charset=utf-8;' });
 
-    if (!navigator.canShare({ files: [file] })) {
+    if (!navigator.canShare({ files: [csvFile, diaryFile] })) {
       await showAlert(t('alertShareUnsupported'));
       return;
     }
     try {
-      await navigator.share({ files: [file], title: filename });
+      await navigator.share({ files: [csvFile, diaryFile] });
     } catch (e) {
       return;
     }
