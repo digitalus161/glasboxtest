@@ -183,6 +183,12 @@ button.submit:active { background: var(--blue-navy); }
 .daily-note { width: 100%; min-height: 82px; resize: vertical; border: 1px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 13px/1.4 inherit; padding: 8px; outline: none; }
 .daily-note:focus { border-color: var(--amber); }
 .hidden { display: none !important; }
+.intro { padding: 12px 20px; border-top: 1px solid var(--blue-line-soft); font-size: 12px; line-height: 1.45; color: var(--blue-ink); }
+.field-row.has-error input[type=text], .field-row.has-error select { border-bottom-color: var(--amber-dark); }
+.field-row.has-error .origin-btn, .field-row.has-error .sig-wrap { border-color: var(--amber-dark); }
+.field-error-msg { margin-top: 6px; color: var(--amber-dark); font-size: 11px; font-weight: bold; }
+.privacy-check { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 1.4; color: var(--blue-ink); cursor: pointer; }
+.privacy-check input { width: 22px; height: 22px; flex: 0 0 22px; margin: 0; accent-color: var(--amber-dark); }
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(22,32,43,0.55);
   display: flex; align-items: center; justify-content: center;
@@ -258,6 +264,9 @@ body.large-text .log-entry { font-size: 15px; }
 body.large-text .modal-box p { font-size: 17px; }
 body.large-text .modal-buttons button { font-size: 15px; padding: 14px; }
 body.large-text .modal-password-input { font-size: 18px; }
+body.large-text .intro { font-size: 15px; }
+body.large-text .field-error-msg { font-size: 14px; }
+body.large-text .privacy-check { font-size: 15px; }
 </style>
 
 <div class="sheet" id="sheet">
@@ -286,8 +295,10 @@ body.large-text .modal-password-input { font-size: 18px; }
     </div>
   </div>
 
+  <div class="intro" data-i18n="introText">Liebe Gäste, um die Betreuungssituation zu verbessern und Maßnahmen passend zur Nachfrage zu gestalten, erfassen wir die Auslastung der GLASBOX. Bitte tragt euch hier ein. Vielen Dank!</div>
+
   <div id="form-area">
-    <div class="field-row">
+    <div class="field-row" id="row-name">
       <label class="field-label"><span class="field-number">1</span><span data-i18n="fieldName">Name</span></label>
       <input type="text" id="f-name" placeholder="Vor- und Nachname" data-i18n-placeholder="fieldNamePlaceholder" autocomplete="off" />
     </div>
@@ -300,11 +311,11 @@ body.large-text .modal-password-input { font-size: 18px; }
       </div>
     </div>
 
-    <div class="field-row">
+    <div class="field-row" id="row-first-visit">
       <label class="field-label"><span class="field-number">3</span><span data-i18n="fieldFirstVisit">Erstbesuch?</span></label>
       <div class="origin-toggle" id="first-visit-toggle">
         <button type="button" class="origin-btn" data-first-visit="ja" data-i18n="firstVisitYes">Ja</button>
-        <button type="button" class="origin-btn active" data-first-visit="nein" data-i18n="firstVisitNo">Nein</button>
+        <button type="button" class="origin-btn" data-first-visit="nein" data-i18n="firstVisitNo">Nein</button>
       </div>
     </div>
 
@@ -329,13 +340,17 @@ body.large-text .modal-password-input { font-size: 18px; }
       <input type="text" id="f-note" placeholder="z.B. 3D-Druck, Beratung, ..." data-i18n-placeholder="fieldNotePlaceholder" autocomplete="off" />
     </div>
 
-    <div class="field-row">
+    <div class="field-row" id="row-signature">
       <label class="field-label"><span class="field-number">6</span><span data-i18n="fieldSignature">Unterschrift</span></label>
       <div class="sig-wrap">
         <canvas id="sig"></canvas>
         <div class="sig-line"></div>
         <button type="button" class="sig-clear" id="sig-clear" data-i18n="sigClear">löschen</button>
       </div>
+    </div>
+
+    <div class="field-row hidden" id="privacy-row">
+      <label class="privacy-check"><input type="checkbox" id="f-privacy" /><span data-i18n="privacyText">Ich bin einverstanden, dass meine Angaben (Name, Herkunft, Unterschrift) zur Erfassung der Auslastung der GLASBOX gespeichert werden.</span></label>
     </div>
 
     <div class="submit-row">
@@ -351,14 +366,15 @@ body.large-text .modal-password-input { font-size: 18px; }
   <div class="footer-row">
     <span data-i18n="footerBrand">Werkstattbuch · digital</span>
     <div class="footer-actions">
-      <button id="toggle-log" type="button" aria-expanded="false" aria-controls="log-panel" data-i18n="toggleLogShow">Einträge anzeigen</button>
       <button id="admin-toggle" type="button" aria-expanded="false" aria-controls="log-actions" data-i18n="adminOpen">Verwaltung öffnen</button>
     </div>
   </div>
 
-  <div class="log-panel" id="log-panel"></div>
   <div class="log-actions hidden" id="log-actions" style="flex-direction:column;">
     <div class="admin-heading" data-i18n="adminHeading">Verwaltung</div>
+    <div style="display:flex; gap:10px; width:100%;">
+      <button id="toggle-log" type="button" aria-expanded="false" aria-controls="log-panel" data-i18n="toggleLogShow">Einträge anzeigen</button>
+    </div>
     <div style="width:100%;">
       <label class="daily-note-label" for="daily-note" data-i18n="dailyNoteLabel">Tagebuchnotiz für heute</label>
       <textarea class="daily-note" id="daily-note" placeholder="Besondere Ereignisse, Beobachtungen oder offene Punkte ..." data-i18n-placeholder="dailyNotePlaceholder"></textarea>
@@ -373,6 +389,7 @@ body.large-text .modal-password-input { font-size: 18px; }
       <button id="manual-clear" style="color:var(--amber-dark); border-color:var(--amber-dark); font-weight:bold;" data-i18n="manualClearBtn">Alle Einträge löschen</button>
     </div>
   </div>
+  <div class="log-panel" id="log-panel"></div>
 </div>
 
 <div class="modal-overlay hidden" id="modal-overlay">
@@ -417,7 +434,12 @@ body.large-text .modal-password-input { font-size: 18px; }
       alertNoEntriesToDelete: 'Es sind schon keine Einträge gespeichert.',
       confirmDeleteAll: 'Wirklich ALLE {count} Einträge löschen? Das kann nicht rückgängig gemacht werden.',
       confirmDeleteAfterExport: 'CSV und Tagebuch wurden heruntergeladen. Alle {count} Einträge jetzt aus dem Werkstattbuch löschen?',
-      langToggleLabel: '🇬🇧 EN', textSizeToggleLabel: 'Größere Schrift', textSizeToggleLabelActive: 'Normale Schrift'
+      langToggleLabel: '🇬🇧 EN', textSizeToggleLabel: 'Größere Schrift', textSizeToggleLabelActive: 'Normale Schrift',
+      introText: 'Liebe Gäste, um die Betreuungssituation zu verbessern und Maßnahmen passend zur Nachfrage zu gestalten, erfassen wir die Auslastung der GLASBOX. Bitte tragt euch hier ein. Vielen Dank!',
+      privacyText: 'Ich bin einverstanden, dass meine Angaben (Name, Herkunft, Unterschrift) zur Erfassung der Auslastung der GLASBOX gespeichert werden.',
+      errorName: 'Bitte Namen eintragen.', errorFirstVisit: 'Bitte Ja oder Nein auswählen.',
+      errorFachbereich: 'Bitte Fachbereich auswählen.', errorSignature: 'Bitte hier unterschreiben.',
+      errorPrivacy: 'Bitte Einverständnis bestätigen.'
     },
     en: {
       tbProjekt: 'Project', tbDatum: 'Date', tbKw: 'CW', tbCount: 'No.',
@@ -447,7 +469,12 @@ body.large-text .modal-password-input { font-size: 18px; }
       alertNoEntriesToDelete: 'There are no entries saved yet.',
       confirmDeleteAll: 'Really delete ALL {count} entries? This cannot be undone.',
       confirmDeleteAfterExport: 'CSV and diary have been downloaded. Delete all {count} entries from the workshop log now?',
-      langToggleLabel: '🇩🇪 DE', textSizeToggleLabel: 'Larger text', textSizeToggleLabelActive: 'Normal text'
+      langToggleLabel: '🇩🇪 DE', textSizeToggleLabel: 'Larger text', textSizeToggleLabelActive: 'Normal text',
+      introText: 'Dear guests, to improve supervision and plan our offers around demand, we record how busy the GLASBOX is. Please sign in here. Thank you!',
+      privacyText: 'I agree that my details (name, origin, signature) are stored to record how busy the GLASBOX is.',
+      errorName: 'Please enter your name.', errorFirstVisit: 'Please choose yes or no.',
+      errorFachbereich: 'Please select a department.', errorSignature: 'Please sign here.',
+      errorPrivacy: 'Please confirm your consent.'
     }
   };
 
@@ -574,7 +601,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     const t = e.touches ? e.touches[0] : e;
     return { x: t.clientX - rect.left, y: t.clientY - rect.top };
   }
-  function start(e) { e.preventDefault(); drawing = true; hasSig = true; last = pos(e); }
+  function start(e) { e.preventDefault(); drawing = true; hasSig = true; last = pos(e); clearFieldError(document.getElementById('row-signature')); }
   function move(e) {
     if (!drawing) return;
     e.preventDefault();
@@ -599,6 +626,29 @@ body.large-text .modal-password-input { font-size: 18px; }
     hasSig = false;
   });
 
+  function setFieldError(row, key) {
+    row.classList.add('has-error');
+    let msg = row.querySelector('.field-error-msg');
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.className = 'field-error-msg';
+      row.appendChild(msg);
+    }
+    msg.setAttribute('data-i18n', key);
+    msg.textContent = t(key);
+  }
+  function clearFieldError(row) {
+    row.classList.remove('has-error');
+    const msg = row.querySelector('.field-error-msg');
+    if (msg) msg.remove();
+  }
+
+  const privacyRow = document.getElementById('privacy-row');
+  const privacyCheckbox = document.getElementById('f-privacy');
+  privacyCheckbox.addEventListener('change', function () { clearFieldError(privacyRow); });
+  document.getElementById('f-name').addEventListener('input', function () { clearFieldError(document.getElementById('row-name')); });
+  document.getElementById('f-fachbereich').addEventListener('change', function () { clearFieldError(document.getElementById('fb-row')); });
+
   const origin = { value: 'extern' };
   document.querySelectorAll('#herkunft-toggle .origin-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -606,18 +656,38 @@ body.large-text .modal-password-input { font-size: 18px; }
       btn.classList.add('active');
       origin.value = btn.dataset.origin;
       document.getElementById('fb-row').style.display = origin.value === 'fachbereich' ? 'block' : 'none';
+      clearFieldError(document.getElementById('fb-row'));
     });
   });
   document.getElementById('fb-row').style.display = 'none';
 
-  const firstVisit = { value: 'nein' };
+  const firstVisit = { value: '' };
   document.querySelectorAll('#first-visit-toggle .origin-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       document.querySelectorAll('#first-visit-toggle .origin-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       firstVisit.value = btn.dataset.firstVisit;
+      clearFieldError(document.getElementById('row-first-visit'));
+      privacyRow.classList.toggle('hidden', firstVisit.value !== 'ja');
+      if (firstVisit.value !== 'ja') {
+        privacyCheckbox.checked = false;
+        clearFieldError(privacyRow);
+      }
     });
   });
+
+  // JPEG has no transparency, so paint white first; downscale to keep localStorage small
+  function signatureJpeg() {
+    const scale = Math.min(1, 500 / canvas.width);
+    const out = document.createElement('canvas');
+    out.width = Math.round(canvas.width * scale);
+    out.height = Math.round(canvas.height * scale);
+    const outCtx = out.getContext('2d');
+    outCtx.fillStyle = '#fff';
+    outCtx.fillRect(0, 0, out.width, out.height);
+    outCtx.drawImage(canvas, 0, 0, out.width, out.height);
+    return out.toDataURL('image/jpeg', 0.7);
+  }
 
   const today = new Date();
   document.getElementById('tb-date').textContent = today.toLocaleDateString('de-DE');
@@ -661,19 +731,30 @@ body.large-text .modal-password-input { font-size: 18px; }
     const fb = document.getElementById('f-fachbereich').value.trim();
     const note = document.getElementById('f-note').value.trim();
 
-    if (!name) { document.getElementById('f-name').focus(); return; }
-    if (!hasSig) { canvas.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-    if (origin.value === 'fachbereich' && !fb) { document.getElementById('f-fachbereich').focus(); return; }
+    const errors = [];
+    if (!name) errors.push({ row: 'row-name', key: 'errorName', focus: 'f-name' });
+    if (!firstVisit.value) errors.push({ row: 'row-first-visit', key: 'errorFirstVisit' });
+    if (origin.value === 'fachbereich' && !fb) errors.push({ row: 'fb-row', key: 'errorFachbereich', focus: 'f-fachbereich' });
+    if (!hasSig) errors.push({ row: 'row-signature', key: 'errorSignature' });
+    if (firstVisit.value === 'ja' && !privacyCheckbox.checked) errors.push({ row: 'privacy-row', key: 'errorPrivacy' });
+    if (errors.length) {
+      errors.forEach(function (err) { setFieldError(document.getElementById(err.row), err.key); });
+      const first = errors[0];
+      if (first.focus) document.getElementById(first.focus).focus();
+      else document.getElementById(first.row).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
 
     const entry = {
       name: name,
       herkunft: origin.value === 'extern' ? 'Extern' : ('Fachbereich: ' + fb),
       erstbesuch: firstVisit.value === 'ja' ? 'Ja' : 'Nein',
+      datenschutz: firstVisit.value === 'ja' ? 'Ja' : '',
       note: note,
       datum: today.toLocaleDateString('de-DE'),
       zeit: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
       kw: currentKW,
-      signature: canvas.toDataURL('image/png')
+      signature: signatureJpeg()
     };
 
     const entries = await loadEntries();
@@ -696,8 +777,10 @@ body.large-text .modal-password-input { font-size: 18px; }
       document.querySelector('[data-origin="extern"]').classList.add('active');
       origin.value = 'extern';
       document.querySelectorAll('#first-visit-toggle .origin-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('[data-first-visit="nein"]').classList.add('active');
-      firstVisit.value = 'nein';
+      firstVisit.value = '';
+      privacyCheckbox.checked = false;
+      privacyRow.classList.add('hidden');
+      document.querySelectorAll('#form-area .field-row').forEach(clearFieldError);
       document.getElementById('fb-row').style.display = 'none';
       document.getElementById('stamp').style.display = 'none';
       document.getElementById('form-area').style.display = 'block';
@@ -726,6 +809,7 @@ body.large-text .modal-password-input { font-size: 18px; }
     logActions.classList.toggle('hidden', !expanded);
     adminToggle.setAttribute('aria-expanded', String(expanded));
     adminToggle.textContent = expanded ? t('adminClose') : t('adminOpen');
+    if (!expanded) setLogExpanded(false);
   }
 
   function displayHerkunft(herkunft) {
@@ -800,9 +884,9 @@ body.large-text .modal-password-input { font-size: 18px; }
   });
 
   function toCsv(entries) {
-    const rows = [['Name', 'Herkunft', 'Erstbesuch', 'Notiz', 'Datum', 'Zeit', 'KW']];
+    const rows = [['Name', 'Herkunft', 'Erstbesuch', 'Datenschutz akzeptiert', 'Notiz', 'Datum', 'Zeit', 'KW']];
     entries.forEach(function (e) {
-      rows.push([e.name, e.herkunft, e.erstbesuch || '', e.note || '', e.datum, e.zeit, e.kw]);
+      rows.push([e.name, e.herkunft, e.erstbesuch || '', e.datenschutz || '', e.note || '', e.datum, e.zeit, e.kw]);
     });
     return rows.map(function (r) {
       return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';');
