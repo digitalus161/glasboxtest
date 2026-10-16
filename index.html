@@ -183,7 +183,10 @@ button.submit:active { background: var(--blue-navy); }
 .daily-note { width: 100%; min-height: 82px; resize: vertical; border: 1px solid var(--blue-line); background: transparent; color: var(--blue-ink); font: 13px/1.4 inherit; padding: 8px; outline: none; }
 .daily-note:focus { border-color: var(--amber); }
 .hidden { display: none !important; }
-.intro { padding: 12px 20px; border-top: 1px solid var(--blue-line-soft); font-size: 12px; line-height: 1.45; color: var(--blue-ink); }
+.intro { padding: 12px 20px; border-top: 1px solid var(--blue-line-soft); }
+.intro-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; padding: 4px 0; font-family: inherit; font-size: 14px; font-weight: bold; color: var(--blue-navy); text-align: left; cursor: pointer; }
+.intro-btn .intro-label { text-decoration: underline; }
+.intro-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; background: var(--amber); color: #fff; font-size: 13px; font-weight: bold; }
 .field-row.has-error input[type=text], .field-row.has-error select { border-bottom-color: var(--amber-dark); }
 .field-row.has-error .origin-btn, .field-row.has-error .sig-wrap { border-color: var(--amber-dark); }
 .field-error-msg { margin-top: 6px; color: var(--amber-dark); font-size: 11px; font-weight: bold; }
@@ -264,7 +267,8 @@ body.large-text .log-entry { font-size: 15px; }
 body.large-text .modal-box p { font-size: 17px; }
 body.large-text .modal-buttons button { font-size: 15px; padding: 14px; }
 body.large-text .modal-password-input { font-size: 18px; }
-body.large-text .intro { font-size: 15px; }
+body.large-text .intro-btn { font-size: 17px; }
+body.large-text .intro-icon { width: 26px; height: 26px; flex: 0 0 26px; font-size: 15px; }
 body.large-text .field-error-msg { font-size: 14px; }
 body.large-text .privacy-check { font-size: 15px; }
 </style>
@@ -295,7 +299,9 @@ body.large-text .privacy-check { font-size: 15px; }
     </div>
   </div>
 
-  <div class="intro" data-i18n="introText">Liebe Gäste, um die Betreuungssituation zu verbessern und Maßnahmen passend zur Nachfrage zu gestalten, erfassen wir die Auslastung der GLASBOX. Bitte tragt euch hier ein. Vielen Dank!</div>
+  <div class="intro">
+    <button type="button" class="intro-btn" id="intro-btn"><span class="intro-icon">i</span><span class="intro-label" data-i18n="introButton">Warum sammeln wir Unterschriften?</span></button>
+  </div>
 
   <div id="form-area">
     <div class="field-row" id="row-name">
@@ -435,6 +441,7 @@ body.large-text .privacy-check { font-size: 15px; }
       confirmDeleteAll: 'Wirklich ALLE {count} Einträge löschen? Das kann nicht rückgängig gemacht werden.',
       confirmDeleteAfterExport: 'CSV und Tagebuch wurden heruntergeladen. Alle {count} Einträge jetzt aus dem Werkstattbuch löschen?',
       langToggleLabel: '🇬🇧 EN', textSizeToggleLabel: 'Größere Schrift', textSizeToggleLabelActive: 'Normale Schrift',
+      introButton: 'Warum sammeln wir Unterschriften?',
       introText: 'Liebe Gäste, um die Betreuungssituation zu verbessern und Maßnahmen passend zur Nachfrage zu gestalten, erfassen wir die Auslastung der GLASBOX. Bitte tragt euch hier ein. Vielen Dank!',
       privacyText: 'Ich bin einverstanden, dass meine Angaben (Name, Herkunft, Unterschrift) zur Erfassung der Auslastung der GLASBOX gespeichert werden.',
       errorName: 'Bitte Namen eintragen.', errorFirstVisit: 'Bitte Ja oder Nein auswählen.',
@@ -470,6 +477,7 @@ body.large-text .privacy-check { font-size: 15px; }
       confirmDeleteAll: 'Really delete ALL {count} entries? This cannot be undone.',
       confirmDeleteAfterExport: 'CSV and diary have been downloaded. Delete all {count} entries from the workshop log now?',
       langToggleLabel: '🇩🇪 DE', textSizeToggleLabel: 'Larger text', textSizeToggleLabelActive: 'Normal text',
+      introButton: 'Why do we collect signatures?',
       introText: 'Dear guests, to improve supervision and plan our offers around demand, we record how busy the GLASBOX is. Please sign in here. Thank you!',
       privacyText: 'I agree that my details (name, origin, signature) are stored to record how busy the GLASBOX is.',
       errorName: 'Please enter your name.', errorFirstVisit: 'Please choose yes or no.',
@@ -642,6 +650,8 @@ body.large-text .privacy-check { font-size: 15px; }
     const msg = row.querySelector('.field-error-msg');
     if (msg) msg.remove();
   }
+
+  document.getElementById('intro-btn').addEventListener('click', function () { showAlert(t('introText')); });
 
   const privacyRow = document.getElementById('privacy-row');
   const privacyCheckbox = document.getElementById('f-privacy');
